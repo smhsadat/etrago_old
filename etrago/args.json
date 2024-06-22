@@ -12,7 +12,7 @@
         "q_allocation": "p_nom"
     },
     "start_snapshot": 1,
-    "end_snapshot": 500,
+    "end_snapshot": 8760,
     "solver": "gurobi",
     "solver_options": {},
     "model_formulation": "kirchhoff",
@@ -20,7 +20,7 @@
     "scn_extension": null,
     "scn_decommissioning": null,
     "lpfile": false,
-    "csv_export": "Result_V0",
+    "csv_export": "Result_V0_8760",
     "extendable": {
         "extendable_components": [
             "as_in_db"

@@ -63,7 +63,7 @@ args = {
         "q_allocation": "p_nom",  # allocate reactive power via 'p_nom' or 'p'
     },
     "start_snapshot": 1,     #smh. this inidcate to the start time of the duration in hour smh. this data is in june
-    "end_snapshot": 500,       #smh. end of period in hour 3744
+    "end_snapshot": 8760,       #smh. end of period in hour 3744
     "solver": "gurobi",  #glpk, cplex or gurobi     #smh. the groubi academic lesceinse required to be installed
     "solver_options": {
         "BarConvTol": 1.0e-5,
@@ -80,7 +80,7 @@ args = {
     "scn_decommissioning": None,  # None or decommissioning scenario
     # Export options:
     "lpfile": False,  # save pyomo's lp file: False or /path/to/lpfile.lp smh. optimization problem debugin, if something happen you can check it 
-    "csv_export": "Result_V0",  # save results as csv: False or /path/tofolder smh. looking for the result
+    "csv_export": "Result_V0_8760",  # save results as csv: False or /path/tofolder smh. looking for the result
     # Settings:
     "extendable": {
         "extendable_components": [
