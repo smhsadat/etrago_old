@@ -1,4 +1,3 @@
-# import required libraries
 import pandas as pd
 import numpy as np
 import math
@@ -99,9 +98,7 @@ MOLAR_MASS_O2 = 0.0319988				# [kg/mol]
 
 # connet to PostgreSQL database
 engine = create_engine(
-    "postgresql+psycopg2://postgres:"
-    "postgres@localhost:"
-    "5432/etrago-data",
+    "postgresql+psycopg2://egon:data@localhost:59738/etrago-data", #should be ok
     echo=False,
 )
 # read and reproject spatial data

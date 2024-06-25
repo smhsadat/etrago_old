@@ -80,7 +80,7 @@ args = {
     "scn_decommissioning": None,  # None or decommissioning scenario
     # Export options:
     "lpfile": False,  # save pyomo's lp file: False or /path/to/lpfile.lp smh. optimization problem debugin, if something happen you can check it 
-    "csv_export": "Result_V0_8760",  # save results as csv: False or /path/tofolder smh. looking for the result
+    "csv_export": "Result_V1_8760_50cl",  # save results as csv: False or /path/tofolder smh. looking for the result
     # Settings:
     "extendable": {
         "extendable_components": [
@@ -111,10 +111,10 @@ args = {
     "network_clustering": {
         "active": True,  # choose if clustering is activated
         "method": "kmedoids-dijkstra",  # choose clustering method: kmeans or kmedoids-dijkstra
-        "n_clusters_AC": 100,  # total number of resulting AC nodes (DE+foreign) smh. standard mentioned to consider 300 here, but using clustering cause to lose the number of bus + electrolyzer beacuse it will reduce the number and show the total capacity. not advised to use in our optimziation but howerever it is theoritic and an option.
+        "n_clusters_AC": 50,  # total number of resulting AC nodes (DE+foreign) smh. standard mentioned to consider 300 here, but using clustering cause to lose the number of bus + electrolyzer beacuse it will reduce the number and show the total capacity. not advised to use in our optimziation but howerever it is theoritic and an option.
         "cluster_foreign_AC": False,  # take foreign AC buses into account, True or False
         "method_gas": "kmedoids-dijkstra",  # choose clustering method: kmeans or kmedoids-dijkstra
-        "n_clusters_gas": 100,  # total number of resulting CH4 nodes (DE+foreign) #smh. set to 50
+        "n_clusters_gas": 50,  # total number of resulting CH4 nodes (DE+foreign) #smh. set to 50
         "cluster_foreign_gas": False,  # take foreign CH4 buses into account, True or False
         "k_elec_busmap": False,  # False or path/to/busmap.csv
         "k_gas_busmap": False,  # False or path/to/ch4_busmap.csv

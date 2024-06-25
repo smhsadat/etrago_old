@@ -1,4 +1,4 @@
-from enum import StrEnum
+from strenum import StrEnum
 
 class Column(StrEnum):
     SCN_NAME = "scn_name"

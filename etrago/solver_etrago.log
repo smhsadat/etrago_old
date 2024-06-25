@@ -9261,3 +9261,176 @@ Iter       Primal          Dual         Primal    Dual     Compl     Time
 Barrier solved model in 88 iterations and 3452.10 seconds
 Optimal objective 9.47601869e+10
 
+
+Gurobi 9.1.2 (linux64) logging started Sat Jun 22 19:03:08 2024
+
+Changed value of parameter logFile to solver_etrago.log
+   Prev:   Default: 
+Changed value of parameter threads to 4
+   Prev: 0  Min: 0  Max: 1024  Default: 0
+Gurobi Optimizer version 9.1.2 build v9.1.2rc0 (linux64)
+Thread count: 16 physical cores, 32 logical processors, using up to 4 threads
+Optimize a model with 55596230 rows, 39827334 columns and 133050144 nonzeros
+Model fingerprint: 0xde7e0f0e
+Coefficient statistics:
+  Matrix range     [4e-04, 6e+02]
+  Objective range  [2e-04, 3e+09]
+  Bounds range     [6e-29, 1e+08]
+  RHS range        [3e-06, 1e+09]
+Warning: Model contains large objective coefficients
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 0 rows and 0 columns (presolve time = 15s) ...
+Presolve removed 34088666 rows and 1197464 columns (presolve time = 23s) ...
+Presolve removed 34088666 rows and 1211480 columns
+Presolve time: 31.95s
+
+Barrier solved model in 0 iterations and 31.95 seconds
+Model is infeasible or unbounded
+
+Gurobi 9.1.2 (linux64) logging started Sat Jun 22 22:34:19 2024
+
+Changed value of parameter logFile to solver_etrago.log
+   Prev:   Default: 
+Changed value of parameter threads to 4
+   Prev: 0  Min: 0  Max: 1024  Default: 0
+Gurobi Optimizer version 9.1.2 build v9.1.2rc0 (linux64)
+Thread count: 16 physical cores, 32 logical processors, using up to 4 threads
+Optimize a model with 40632398 rows, 30498073 columns and 100342315 nonzeros
+Model fingerprint: 0x4053510b
+Coefficient statistics:
+  Matrix range     [4e-04, 6e+02]
+  Objective range  [4e-04, 3e+09]
+  Bounds range     [6e-29, 1e+08]
+  RHS range        [8e-06, 1e+09]
+Warning: Model contains large objective coefficients
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 0 rows and 0 columns (presolve time = 11s) ...
+Presolve removed 24499970 rows and 1031470 columns (presolve time = 16s) ...
+Presolve removed 24499970 rows and 1041982 columns
+Presolve time: 22.90s
+
+Barrier solved model in 0 iterations and 22.90 seconds
+Model is infeasible or unbounded
+
+Gurobi 9.1.2 (linux64) logging started Sun Jun 23 04:15:57 2024
+
+Changed value of parameter logFile to solver_etrago.log
+   Prev:   Default: 
+Changed value of parameter threads to 4
+   Prev: 0  Min: 0  Max: 1024  Default: 0
+Gurobi Optimizer version 9.1.2 build v9.1.2rc0 (linux64)
+Thread count: 16 physical cores, 32 logical processors, using up to 4 threads
+Optimize a model with 61104516 rows, 38765515 columns and 141923447 nonzeros
+Model fingerprint: 0x6c4eba71
+Coefficient statistics:
+  Matrix range     [2e-04, 4e+02]
+  Objective range  [4e-05, 7e+09]
+  Bounds range     [8e-28, 1e+09]
+  RHS range        [8e-06, 1e+08]
+Warning: Model contains large objective coefficients
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 0 rows and 0 columns (presolve time = 19s) ...
+Presolve removed 37205473 rows and 582716 columns (presolve time = 28s) ...
+Presolve removed 37205473 rows and 591476 columns (presolve time = 31s) ...
+Presolve removed 37205473 rows and 7207028 columns (presolve time = 192s) ...
+Presolve removed 37506645 rows and 7233308 columns (presolve time = 244s) ...
+Presolve removed 37513337 rows and 7240000 columns (presolve time = 255s) ...
+Presolve removed 45861559 rows and 15588222 columns (presolve time = 262s) ...
+Presolve removed 45863337 rows and 15590000 columns (presolve time = 268s) ...
+Presolve removed 45866949 rows and 15593612 columns (presolve time = 298s) ...
+Presolve removed 45866949 rows and 15593612 columns (presolve time = 307s) ...
+Presolve removed 45866949 rows and 15593839 columns (presolve time = 447s) ...
+Presolve removed 45866949 rows and 15604619 columns (presolve time = 472s) ...
+Presolve removed 45866949 rows and 15604619 columns (presolve time = 481s) ...
+Presolve removed 45866949 rows and 15604619 columns
+Presolve time: 483.84s
+Presolved: 15237567 rows, 23160896 columns, 63390077 nonzeros
+Elapsed ordering time = 5s
+Elapsed ordering time = 10s
+Elapsed ordering time = 15s
+Elapsed ordering time = 20s
+Elapsed ordering time = 274s
+Elapsed ordering time = 276s
+Elapsed ordering time = 280s
+Elapsed ordering time = 285s
+Elapsed ordering time = 290s
+Elapsed ordering time = 295s
+Elapsed ordering time = 300s
+Elapsed ordering time = 305s
+Elapsed ordering time = 310s
+Elapsed ordering time = 446s
+Elapsed ordering time = 465s
+Elapsed ordering time = 477s
+Elapsed ordering time = 482s
+Elapsed ordering time = 489s
+Elapsed ordering time = 491s
+Elapsed ordering time = 495s
+Elapsed ordering time = 501s
+Elapsed ordering time = 505s
+Elapsed ordering time = 510s
+Elapsed ordering time = 515s
+Elapsed ordering time = 520s
+Elapsed ordering time = 525s
+Elapsed ordering time = 530s
+Elapsed ordering time = 535s
+Elapsed ordering time = 540s
+Elapsed ordering time = 681s
+Elapsed ordering time = 694s
+Elapsed ordering time = 700s
+Elapsed ordering time = 705s
+Elapsed ordering time = 709s
+Elapsed ordering time = 710s
+Elapsed ordering time = 716s
+Elapsed ordering time = 721s
+Elapsed ordering time = 725s
+Elapsed ordering time = 730s
+Elapsed ordering time = 736s
+Elapsed ordering time = 740s
+Elapsed ordering time = 745s
+Elapsed ordering time = 750s
+Elapsed ordering time = 755s
+Elapsed ordering time = 760s
+Elapsed ordering time = 765s
+Elapsed ordering time = 937s
+Elapsed ordering time = 980s
+Elapsed ordering time = 989s
+Elapsed ordering time = 1000s
+Elapsed ordering time = 1009s
+Elapsed ordering time = 1011s
+Elapsed ordering time = 1015s
+Elapsed ordering time = 1020s
+Elapsed ordering time = 1025s
+Elapsed ordering time = 1030s
+Elapsed ordering time = 1035s
+Elapsed ordering time = 1040s
+Elapsed ordering time = 1045s
+Elapsed ordering time = 1050s
+Elapsed ordering time = 1055s
+Elapsed ordering time = 1201s
+Elapsed ordering time = 1214s
+Elapsed ordering time = 1220s
+Elapsed ordering time = 1226s
+Elapsed ordering time = 1232s
+Elapsed ordering time = 1238s
+Elapsed ordering time = 1240s
+Elapsed ordering time = 1246s
+Elapsed ordering time = 1250s
+Elapsed ordering time = 1255s
+Elapsed ordering time = 1261s
+Elapsed ordering time = 1265s
+Elapsed ordering time = 1270s
+Elapsed ordering time = 1275s
+Elapsed ordering time = 1280s
+Elapsed ordering time = 1285s
+Ordering time: 1327.86s
+
+Barrier statistics:
+ Dense cols : 6450
+ Free vars  : 6563
+ AA' NZ     : 4.986e+07
+ Factor NZ  : 9.437e+09 (roughly 100.0 GBytes of memory)
+ Factor Ops : 5.614e+14 (roughly 7000 seconds per iteration)
+ Threads    : 4

@@ -6,9 +6,7 @@ from shapely.io import from_wkt, to_wkb
 
 # Database connection settings
 engine = create_engine(
-    "postgresql+psycopg2://postgres:"
-    "postgres@localhost:"
-    "5432/etrago-data",
+        "postgresql+psycopg2://egon:data@localhost:59738/etrago-data", #should be ok
     echo=False)
 
 # Read the CSV file containing the new data
