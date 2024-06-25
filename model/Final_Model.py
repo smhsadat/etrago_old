@@ -1,9 +1,6 @@
-# import required libraries
 import pandas as pd
-import numpy as np
 import math
 import geopandas as gpd
-import matplotlib.pyplot as plt
 from itertools import count
 from rtree import index
 from geopandas.tools import sjoin
@@ -12,16 +9,13 @@ from sqlalchemy import create_engine, text
 from scipy.optimize import minimize
 from shapely.io import from_wkt, to_wkt
 from shapely.geometry import MultiLineString, LineString, Point
-from shapely.wkb import dumps
 from columns import Column
-import random
-
-SCENARIO_NO=2			# 1 = WWTP as reference location, 2 = based on AC as reference location
-OPTIMIZATION = "no"	# yes or no will lead optimization part to be activte or inactive
-SUBSTATION = "yes"		# yes or no will switch between AC points and Substation points.
 
 # Input Constant Parameters 
 # General input for the Model
+SCENARIO_NO=2			# 1 = WWTP as reference location, 2 = based on AC as reference location
+OPTIMIZATION = "no"	# yes or no will lead optimization part to be activte or inactive
+SUBSTATION = "yes"		# yes or no will switch between AC points and Substation points.
 SCENARIO_NAME = "eGon2035"
 DATA_CRS=4326
 METRIC_CRS=3857
@@ -46,11 +40,9 @@ MAXIMUM_DISTANCE = { # meter
 
 # Electricity
 ELEC_COST = 60 							# [EUR/MWh]
-AC_TRANS_220_110 = 17_500				# [EUR/MVA]
+AC_TRANS = 17_500				# [EUR/MVA]
 AC_LIFETIME_CABLE = 25					# [year]
-AC_LIFETIME_OHTL = 40					# [year]
 AC_COST_CABLE = 800_000					# [EUR/km/MVA]
-AC_COST_OHTL = 60_000					# [EUR/KM/MVA]
 FUEL_CELL_EFF = 0.5						# to use as effeciency of hydrogen to power
 
 # Heat
@@ -70,7 +62,9 @@ FACTOR_O2_EC = 0.8						# [%] Oxygen Electrical Consumption from total aeration 
 O2_LIFETIME_PIPELINE = 25				
 O2_EFFICIENCY = 0.9
 O2_PRESSURE_MIN = 2					# [bar]
-O2_EQUIPMENT_COST = 25_000
+O2_COST_EQUIPMENT = 5000
+O2_LIEFTIME_EQUIPMENT = 25
+O2_COST_PIPELINE = 400_000
 
 # Electrolyzers (ELZ)
 ELZ_SEC = 50	 						# [kWh/kgH2] electrolyzer specific energy 
@@ -91,17 +85,20 @@ H2_LIFETIME_PIPELINE = 25				# [YEAR]
 
 # general gas pipeline constant
 PIPELINE_DIAMETER_RANGE = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50] # range of pipeline size [m]
-TEMPERATURE = 15	+ 273.15			# [Kelvin] degree + 273.15
+H2_COST_PIPELINE = 900_000				# EUR/KM/MW
+TEMPERATURE = 15 + 273.15			# [Kelvin] degree + 273.15
 UNIVERSAL_GAS_CONSTANT = 8.3145			# [J/(mol·K)]
 MOLAR_MASS_H2 = 0.002016				# [kg/mol]
 MOLAR_MASS_O2 = 0.0319988				# [kg/mol]
 
-
-# connet to PostgreSQL database
+# # connet to PostgreSQL database (to server)
+# engine = create_engine(
+#     "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
+#     echo=False,
+# )
+# connet to PostgreSQL database (to localhost)
 engine = create_engine(
-    "postgresql+psycopg2://postgres:"
-    "postgres@localhost:"
-    "5432/etrago-data",
+    "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
     echo=False,
 )
 # read and reproject spatial data
@@ -298,7 +295,6 @@ first_joined_df = pd.merge(main_df, min_h2_intersections, on=col, how="inner")
 first_joined_df = pd.merge(first_joined_df, min_heatpoint_intersections, on=col, how="inner")
 first_joined_df.to_csv("Phase-1 Result.csv", index=False)
 
-
 # Second Phase: Data management
 o2_ac = pd.read_csv("O2_AC.csv", index_col=False).drop_duplicates()
 ref_h2 = pd.read_csv("Ref_H2.csv", index_col=False).drop_duplicates()
@@ -348,12 +344,9 @@ def get_wwtps_for_ac(ac_id):
 
 def get_ac_for_wwtp(wwtp_id):
 	wwtp = o2_ac[o2_ac[Column.ID_WWTP] == wwtp_id]
-
 	if len(wwtp) > 1:
 		raise Exception("found multiple ac for a wwtp_id")
-
 	wwtp = wwtp.iloc[0]
-	
 	return {
 		"id": wwtp[Column.ID_AC],
 		"ka_id": wwtp[Column.ID_KA],
@@ -364,12 +357,9 @@ def get_ac_for_wwtp(wwtp_id):
 
 def get_heat_for_ref(ref_id):
 	heat = ref_heat[ref_heat[get_correct_ref_id_col()] == ref_id]
-
 	if len(heat) > 1:
 		raise Exception("found multiple heat for a ref_id")
-
 	heat = heat.iloc[0]
-	
 	return {
 		"id": heat[Column.ID_HEAT],
 		"point": from_wkt(heat[Column.POINT_HEAT]),
@@ -379,10 +369,9 @@ def get_heat_for_ref(ref_id):
 
 def get_h2_for_ref(ref_id):
 	h2 = ref_h2[ref_h2[get_correct_ref_id_col()] == ref_id]
-
 	if len(h2) > 1:
 		raise Exception("found multiple h2 for a ref_id")
-	
+
 	h2 = h2.iloc[0]
 	
 	return {
@@ -599,7 +588,6 @@ def find_links(o2_ac, ref_heat, ref_h2):
 				ka_id = bus1["ka_id"]
 			geom = MultiLineString([[[bus0_point.x, bus0_point.y], [bus1["point"].x, bus1["point"].y]]])
 			distance = bus0_point.distance(bus1["point"]) / 1000	# km
-
 			spec = find_spec_for_ka_id(ka_id)
 			wwtp_ec = calculate_wwtp_capacity(spec["pe"])			# [MWh/year]
 			aeration_ec = wwtp_ec * FACTOR_AERATION_EC		# [MWh/year]
@@ -613,16 +601,37 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			_,o2_pipeline_diameter = gas_pipeline_size(total_o2_demand, distance, O2_PRESSURE_ELZ, MOLAR_MASS_O2, O2_PRESSURE_MIN)
 
 			# In below function MW shouldn't be considered since the diameter size already calcuated and KM is enough
-			annualized_cost_o2 = annualize_capital_costs(get_o2_pipeline_cost(o2_pipeline_diameter), O2_LIFETIME_PIPELINE, DISCOUNT_RATE)	# [EUR/KM/YEAR]
-			capital_cost_power_to_o2 = annualized_cost_o2 * distance + O2_EQUIPMENT_COST * o2_ec_h	# [EUR/YEAR]
-			# extra explanation: the consumption energy of oxygen is already calculated in the above function (o2_ec). firstly we find the cost of 1kg of oxygen by considering the total consumption energy of oxygen * electricity price and totaly divide by total kg of oxygen in one year, the result is the cost of 1kg of oxygen. since we already know that during production of each kg of H2 almost 8 kg (o2_h2_ratio) of O2 will be provided, the cost of 1kg of O2 will be multiplied by the h2 ration to find the total cost of o2 in one speciifc time of h2 produciton. in further step to find the loch of o2 (by focusing on h2) the total capex of o2 pipeline is required + the sellable o2 cost * h2 production per year (muliplying sellable o2 to h2 yearly production give us the total contribution cost of o2 production in electrolyzer for one year) all of them will be devided to total production of hydrogen in one year to find out the total cost of EURO/kgH2. this value will be used to be sum with lcoh cost of hydrogen to show the total cost of LCOH in optimization. on the other hand it is usful to subtract this cost from sellable o2 cost to show that the cost comparison of usage of o2 by having a pipeline line. for example if the sellable o2 be 0.25 and the lcoh o2 be 0.18, it show 0.07 cent benefit eventhough constructing a pipeline. if the price become negetive, it shows disadvantage of o2 usage due to high cost of pipeline.
+			annualized_cost_o2_pipeline = annualize_capital_costs(get_o2_pipeline_cost(o2_pipeline_diameter), O2_LIFETIME_PIPELINE, DISCOUNT_RATE)	# [EUR/KM/YEAR]
+			annualized_cost_o2_component = annualize_capital_costs(O2_COST_EQUIPMENT, O2_LIEFTIME_EQUIPMENT, DISCOUNT_RATE)	# [EUR/MW/YEAR]
+			capital_cost_power_to_o2_pipeline = annualized_cost_o2_pipeline * distance # [EUR/YEAR]
+			capital_cost_power_to_o2_component = annualized_cost_o2_component * o2_ec_h	# [EUR/YEAR]
+			capital_cost_power_to_o2 = capital_cost_power_to_o2_pipeline + capital_cost_power_to_o2_component # 	# [EUR/YEAR]
+            
+			# extra explanation: the consumption energy of oxygen is already calculated in 
+            #the above function (o2_ec). firstly the cost of 1kg of oxygen by considering 
+            #the total consumption energy of oxygen * electricity price and totaly divide by total kg of oxygen 
+            #in one year has been found, the result is the cost of 1kg of oxygen. since we already know that 
+            # during production 
+            # of each kg of H2 almost 8 kg (o2_h2_ratio) of O2 will be provided, the cost of 1kg of O2 will be 
+            # multiplied by the h2 ratio to find the total cost of o2 in one specific time of h2 production. 
+            #in further step to find the loch of o2 (by focusing on h2) the total capex of o2 pipeline
+            #is required + the sellable o2 cost * h2 production per year (muliplying sellable o2 to h2 yearly
+            #production give us the total contribution cost of o2 production in electrolyzer for one year) all 
+            #of them will be devided to total production of hydrogen in one year to find out the total cost of 
+            #EURO/kgH2. this value will be used to be sum with lcoh cost of hydrogen to show the total cost of 
+            #LCOH in optimization. on the other hand it is usful to subtract this cost from sellable o2 cost to 
+            #show that the cost comparison of usage of o2 by having a pipeline line. for example if the sellable
+            #o2 be 0.25 and the lcoh o2 be 0.18, it show 0.07 cent benefit eventhough constructing a pipeline. 
+            #if the price become negetive, it shows disadvantage of o2 usage due to high cost of pipeline.
+            
 			o2_selling_price = o2_ec * ELEC_COST / total_o2_demand				#EUR/kgO2
 			sellable_o2 = (o2_selling_price * O2_H2_RATIO)						#EUR/kgH2
-			lcoh_o2 = (capital_cost_power_to_o2 + sellable_o2 * h2_production_y)/ h2_production_y
+            
+			lcoh_o2 = capital_cost_power_to_o2/ h2_production_y # [EUR/Year]/[kgh2/Year]   [EUR/kgH2]
 			total_lcoh += lcoh_o2
 			# net lcoh shows only the lcoh cost of o2 pipeline line. this might be useful to be considered if less than sellable o2 shows the advantage of using o2 pipeline line else the cost of pipeline is higher than the sellable o2 cost which shows disadvantage of using o2 pipeline line.
-			net_lcoh_o2 = lcoh_o2 - sellable_o2
-			etrago_cost_power_to_o2 = (annualized_cost_o2 * distance / o2_ec_h) + O2_EQUIPMENT_COST					# [EUR/MW/YEAR]	
+			net_lcoh_o2 = sellable_o2 - lcoh_o2
+			etrago_cost_power_to_o2 = (annualized_cost_o2_pipeline * distance / o2_ec_h) + annualized_cost_o2_component					# [EUR/MW/YEAR]	
 
 			links.append({
 				"bus0": bus0,
@@ -635,7 +644,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 				"lcoh_capital_cost": capital_cost_power_to_o2,
 				"p_nom": o2_ec_h,
 				"sellable_cost": sellable_o2,
-				"LCOH": net_lcoh_o2,
+				"LCOH": lcoh_o2,
 				"elz_capacity": elz_capacity,
 				"diameter":o2_pipeline_diameter,
 				"ka_id": ka_id,
@@ -677,8 +686,8 @@ def find_links(o2_ac, ref_heat, ref_h2):
 		annualized_capex_heat_pipeline = annualize_capital_costs(get_heat_pipeline_cost(6, distance),HEAT_LIFETIME, DISCOUNT_RATE)		# [EUR/MW/KM/YEAR]
 		capital_cost_power_to_heat = (annualized_capex_heat + (annualized_capex_heat_pipeline * distance)) * heat_production_h			# [EUR/YEAR]
 
-		sellable_heat = elz_capacity * HEAT_RATIO * HEAT_SELLING_PRICE / h2_production_h 												# [EUR/kgH2]
-		lcoh_heat = (capital_cost_power_to_heat + sellable_heat * h2_production_y)/ h2_production_y
+		sellable_heat = elz_capacity * HEAT_RATIO * HEAT_SELLING_PRICE / h2_production_h 	# [EUR/kgH2]
+		lcoh_heat = capital_cost_power_to_heat/ h2_production_y # [EUR/kgH2]
 		total_lcoh += lcoh_heat
 		net_lcoh_heat = lcoh_heat - sellable_heat		
 		
@@ -695,7 +704,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"lcoh_capital_cost": capital_cost_power_to_heat,
 			"p_nom": heat_production_h,
 			"sellable_cost": sellable_heat,
-			"LCOH": net_lcoh_heat,
+			"LCOH": lcoh_heat,
 			"elz_capacity": elz_capacity,
 			"diameter": "",
 			"ka_id": HEAT_RATIO,
@@ -743,17 +752,18 @@ def find_links(o2_ac, ref_heat, ref_h2):
 		# annualized cost calculation
 		annualized_cost_h2_pipeline = annualize_capital_costs(get_h2_pipeline_cost(h2_pipeline_diameter), ELZ_LIFETIME_Y, DISCOUNT_RATE)		# [EUR/KM/YEAR]
 		annualized_cost_ac_cable = annualize_capital_costs((AC_COST_CABLE * ac_distance), AC_LIFETIME_CABLE, DISCOUNT_RATE)						# [EUR/MW/YEAR]
-		annualized_cost_ac_trans = annualize_capital_costs(AC_TRANS_220_110, AC_LIFETIME_CABLE, DISCOUNT_RATE)									# [EUR/MW/YEAR]
+		annualized_cost_ac_trans = annualize_capital_costs(AC_TRANS, AC_LIFETIME_CABLE, DISCOUNT_RATE)									# [EUR/MW/YEAR]
 		annualized_cost_elz = annualize_capital_costs((ELZ_CAPEX_STACK + ELZ_CAPEX_SYSTEM + ELZ_OPEX), ELZ_LIFETIME_Y, DISCOUNT_RATE)			# [EUR/MW/YEAR]
 
 		# below calcualtion aimed to find the capital cost of power to H2 for LCOH calculation for stand alone model. and the cost cover every part since the total lcoh will be the objective of the optimization in further steps.
 		total_ac_cost = (annualized_cost_ac_cable + annualized_cost_ac_trans + annualized_cost_elz) * elz_capacity								# [EUR/YEAR]
-		lcoh_capital_cost_power_to_h2 = (annualized_cost_h2_pipeline * distance + total_ac_cost)												# [EUR/YEAR]
-		lcoh_h2 = (lcoh_capital_cost_power_to_h2 + (h2_production_y * ELZ_SEC * ELEC_COST/1000)) / h2_production_y								# [EUR/kgH2]					
-		total_lcoh += lcoh_h2
+		total_pipelin_cost = annualized_cost_h2_pipeline * distance												# [EUR/YEAR]
+		lcoh_h2_elz = (total_ac_cost + (h2_production_y * ELZ_SEC * ELEC_COST/1000)) / h2_production_y								# [EUR/kgH2]
+		lcoh_h2_pipeline = total_pipelin_cost / h2_production_y			# [EUR/kgH2]
+		total_lcoh += lcoh_h2_elz
 
 		# Sine Capital Cost in eTraGO rquires EUR/MW/YEAR not EUR/YEAR. in addition, the power to H2 in etrago relay on cost related to produce hdyrogen not transfering the cost of H2 pipeline will be excluded and will be considered in H2 to Power link.
-		etrago_cost_power_to_h2 = annualized_cost_ac_cable + annualized_cost_ac_trans + annualized_cost_elz										# [EUR/MW/YEAR]
+		etrago_cost_power_to_h2 = annualized_cost_ac_cable + annualized_cost_ac_trans + annualized_cost_elz		# [EUR/MW/YEAR]
 
 		links.append({
 			"bus0": bus0,
@@ -763,10 +773,10 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"power_ratio": distance,
 			"length": ac_distance,
 			"capital_cost": etrago_cost_power_to_h2,
-			"lcoh_capital_cost": lcoh_capital_cost_power_to_h2,
+			"lcoh_capital_cost": total_ac_cost,
 			"p_nom": elz_capacity,
 			"sellable_cost": "",
-			"LCOH": lcoh_h2,
+			"LCOH": lcoh_h2_elz,
 			"elz_capacity": elz_capacity,
 			"diameter": h2_pipeline_diameter,
 			"ka_id": "",
@@ -809,9 +819,16 @@ def find_links(o2_ac, ref_heat, ref_h2):
 
 		# calculating the cost of power to H2 for eTraGO since it is rquired EUR/MW/YEAR not EUR/YEAR
 		
-		annualized_cost_h2_pipeline = annualize_capital_costs(get_h2_pipeline_cost(h2_pipeline_diameter), ELZ_LIFETIME_Y, DISCOUNT_RATE)		# [EUR/KM/YEAR]
-		etrago_cost_h2_to_power = annualized_cost_h2_pipeline * distance / h2_production_energy_h												# [EUR/MW/YEAR]
-
+		annualized_cost_h2_pipeline = annualize_capital_costs(get_h2_pipeline_cost(h2_pipeline_diameter), ELZ_LIFETIME_Y, DISCOUNT_RATE)# [EUR/KM/YEAR]
+        
+        
+		total_pipeline_cost = annualized_cost_h2_pipeline * distance												# [EUR/YEAR]
+		lcoh_h2_pipeline = total_pipeline_cost / h2_production_y			# [EUR/kgH2]
+		total_lcoh += lcoh_h2_pipeline
+        
+		etrago_annualized_cost_h2_pipeline = annualize_capital_costs(H2_COST_PIPELINE, ELZ_LIFETIME_Y, DISCOUNT_RATE)	# [EUR/KM/YEAR]
+		etrago_cost_h2_to_power = etrago_annualized_cost_h2_pipeline * distance	# [EUR/MW/YEAR]
+        
 		links.append({
 			"bus0": bus0,
 			"bus1": bus1,
@@ -820,10 +837,10 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"power_ratio": 0,
 			"length": distance,
 			"capital_cost": etrago_cost_h2_to_power,
-			"lcoh_capital_cost": "",
+			"lcoh_capital_cost": total_pipeline_cost,
 			"p_nom": h2_production_energy_h,
 			"sellable_cost": "",
-			"LCOH": "",
+			"LCOH": lcoh_h2_pipeline,
 			"elz_capacity": elz_capacity,
 			"diameter": h2_pipeline_diameter,
 			"ka_id": "",
@@ -897,6 +914,8 @@ if OPTIMIZATION == "yes":
 else:
 	links_df, _ = find_links(o2_ac, ref_heat, ref_h2)
 	links_df.to_csv(f'SCN-{SCENARIO_NO} Original.csv', index=False)
+	print("Optimization is not supported yet")
+
 
 # links_df.sort_values(by="bus0")
 # links_df[links_df["carrier"] == "H2_to_power"].head()
@@ -906,7 +925,7 @@ else:
 
 # Third Phase: Export to PostgreSQL
 # export links data to PostgreSQL database
-if OPTIMIZATION == "no":
+if OPTIMIZATION == "yes":
 	def export_to_db(df):
 		df = df.copy(deep=True)
 		etrago_columns = [	
@@ -925,22 +944,22 @@ if OPTIMIZATION == "no":
 			"terrain_factor",
 			"geom",
 		]
-
-		next_max_id = count(start=80_000, step=1)
+		max_link_id = 80_000
+		next_max_link_id = count(start=max_link_id, step=1)
 
 		df["scn_name"] = SCENARIO_NAME
 		df["build_year"] = 2035
 		df["lifetime"] = 25
 		df["p_nom_extendable"] = True
 		df["length"] = 0
-		df["link_id"] = df["bus0"].apply(lambda _: next(next_max_id))
+		df["link_id"] = df["bus0"].apply(lambda _: next(next_max_link_id))
 		df["geom"] = df["geom"].apply(lambda x: to_wkt(x))
 
 		df = df.filter(items=etrago_columns, axis=1)
 
 		table_name = "egon_etrago_link"
 		with engine.connect() as conn:
-			conn.execute(text(f"DELETE FROM grid.{table_name} WHERE link_id >= {80000} AND scn_name = '{SCENARIO_NAME}'"))
+			conn.execute(text(f"DELETE FROM grid.{table_name} WHERE link_id >= {max_link_id} AND scn_name = '{SCENARIO_NAME}'"))
 
 		df.to_sql(
 			"egon_etrago_link",
@@ -955,14 +974,14 @@ else:
 	
 
     # Third Phase: Export O2 load to PostgreSQL
-if OPTIMIZATION == "no":
+if OPTIMIZATION == "yes":
 	def insert_load_points(df):
-		max_id = 40_000
-		next_id = count(start=max_id, step=1)
+		max_load_id = 40_000
+		next_load_id = count(start=max_load_id, step=1)
 		table_name = "egon_etrago_load"
 
 		with engine.connect() as conn:
-			conn.execute(f"DELETE FROM grid.{table_name} WHERE load_id >= {max_id} AND scn_name = '{SCENARIO_NAME}'")
+			conn.execute(f"DELETE FROM grid.{table_name} WHERE load_id >= {max_load_id} AND scn_name = '{SCENARIO_NAME}'")
 		
 		df = df.copy(deep=True)
 
@@ -970,7 +989,7 @@ if OPTIMIZATION == "no":
 
 		result = []
 		for _, row in df.iterrows():
-			load_id = next(next_id)
+			load_id = next(next_load_id)
 
 			result.append({
 				"scn_name": SCENARIO_NAME,
@@ -997,14 +1016,14 @@ else:
 	
 
     # Third Phase: Export O2 generator to O2 bus points in to the PostgreSQL database
-if OPTIMIZATION == "no":
+if OPTIMIZATION == "yes":
 	def insert_generator_points(df):
-		max_id = 40_000
-		next_id = count(start=max_id, step=1)
+		max_generator_id = 40_000
+		next_generator_id = count(start=max_generator_id, step=1)
 		table_name = "egon_etrago_generator"
 
 		with engine.connect() as conn:
-			conn.execute(f"DELETE FROM grid.{table_name} WHERE generator_id >= {max_id} AND scn_name = '{SCENARIO_NAME}'")
+			conn.execute(f"DELETE FROM grid.{table_name} WHERE generator_id >= {max_generator_id} AND scn_name = '{SCENARIO_NAME}'")
 
 		df = df.copy(deep=True)
 
@@ -1012,7 +1031,7 @@ if OPTIMIZATION == "no":
 
 		result = []
 		for _, row in df.iterrows():
-			generator_id = next(next_id)
+			generator_id = next(next_generator_id)
 
 			result.append({
 				"scn_name": SCENARIO_NAME,
@@ -1035,19 +1054,19 @@ if OPTIMIZATION == "no":
 
 	insert_generator_points(links_df)
 else:
-	print("Optimization part is not implemented yet")
+	print("Optimization is not implemented yet")
 	
 
 
 #     # Third Phase: Export load time series data to PostgreSQL database
 # if OPTIMIZATION == "no":
 # 	def insert_load_timeseries(df):
-# 		max_id = 40_000
-# 		next_id = count(start=max_id, step=1)
+# 		max_loadt_id = 40_000
+# 		next_loadt_id = count(start=max_loadt_id, step=1)
 # 		table_name = "egon_etrago_load_timeseries"
 		
 # 		with engine.connect() as conn:
-# 			conn.execute(f"DELETE FROM grid.{table_name} WHERE load_id >= {max_id} AND scn_name = '{SCENARIO_NAME}'")
+# 			conn.execute(f"DELETE FROM grid.{table_name} WHERE load_id >= {max_loadt_id} AND scn_name = '{SCENARIO_NAME}'")
 
 # 		df = df.copy(deep=True)
 
@@ -1055,7 +1074,7 @@ else:
 		
 # 		result = []
 # 		for _, row in df.iterrows():
-# 			load_id = next(next_id)
+# 			load_id = next(next_loadt_id)
 			
 # 			# Repeat the p_set_value 8760 times  
 # 			p_set_value = row["p_nom"]  # Assuming this is the single value you have
@@ -1087,5 +1106,5 @@ else:
 
 # 	insert_load_timeseries(links_df)
 # else:
-# 	print("Optimization is not implemented yet")
+#	print("Optimization is not implemented yet")
 
