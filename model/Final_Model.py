@@ -14,13 +14,13 @@ from columns import Column
 # Input Constant Parameters 
 # General input for the Model
 SCENARIO_NO=2			# 1 = WWTP as reference location, 2 = based on AC as reference location
-OPTIMIZATION = "no"	# yes or no will lead optimization part to be activte or inactive
+OPTIMIZATION = "no"	    # yes or no will lead optimization part to be activte or inactive
 SUBSTATION = "yes"		# yes or no will switch between AC points and Substation points.
 SCENARIO_NAME = "eGon2035"
+ID_OPTIMAL_START = 80_000
 DATA_CRS=4326
 METRIC_CRS=3857
 DISCOUNT_RATE = 0.05
-ID_OPTIMAL_START=80_000
 
 H2 = 'h2'
 WWTP = 'wwtp'
@@ -40,7 +40,7 @@ MAXIMUM_DISTANCE = { # meter
 
 # Electricity
 ELEC_COST = 60 							# [EUR/MWh]
-AC_TRANS = 17_500				# [EUR/MVA]
+AC_TRANS = 17_500			            # [EUR/MVA]
 AC_LIFETIME_CABLE = 25					# [year]
 AC_COST_CABLE = 800_000					# [EUR/km/MVA]
 FUEL_CELL_EFF = 0.5						# to use as effeciency of hydrogen to power
@@ -61,10 +61,9 @@ FACTOR_AERATION_EC = 0.6				# [%] aeration Electrical Consumption from total cap
 FACTOR_O2_EC = 0.8						# [%] Oxygen Electrical Consumption from total aeration EC
 O2_LIFETIME_PIPELINE = 25				
 O2_EFFICIENCY = 0.9
-O2_PRESSURE_MIN = 2					# [bar]
+O2_PRESSURE_MIN = 2				     	# [bar]
 O2_COST_EQUIPMENT = 5000
 O2_LIEFTIME_EQUIPMENT = 25
-O2_COST_PIPELINE = 400_000
 
 # Electrolyzers (ELZ)
 ELZ_SEC = 50	 						# [kWh/kgH2] electrolyzer specific energy 
@@ -80,13 +79,13 @@ H2_PRESSURE_ELZ = 30					# [bar]		1.01325
 O2_PRESSURE_ELZ = 13					# [bar]
 
 # Hydrogen Pipeline
-H2_PRESSURE_MIN = 28					# [bar]
+H2_PRESSURE_MIN = 29					# [bar]
 H2_LIFETIME_PIPELINE = 25				# [YEAR]
+H2_COST_PIPELINE = 25_000				# [EUR/MW]
 
 # general gas pipeline constant
 PIPELINE_DIAMETER_RANGE = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50] # range of pipeline size [m]
-H2_COST_PIPELINE = 900_000				# EUR/KM/MW
-TEMPERATURE = 15 + 273.15			# [Kelvin] degree + 273.15
+TEMPERATURE = 15 + 273.15			    # [Kelvin] degree + 273.15
 UNIVERSAL_GAS_CONSTANT = 8.3145			# [J/(mol·K)]
 MOLAR_MASS_H2 = 0.002016				# [kg/mol]
 MOLAR_MASS_O2 = 0.0319988				# [kg/mol]
@@ -630,7 +629,6 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			lcoh_o2 = capital_cost_power_to_o2/ h2_production_y # [EUR/Year]/[kgh2/Year]   [EUR/kgH2]
 			total_lcoh += lcoh_o2
 			# net lcoh shows only the lcoh cost of o2 pipeline line. this might be useful to be considered if less than sellable o2 shows the advantage of using o2 pipeline line else the cost of pipeline is higher than the sellable o2 cost which shows disadvantage of using o2 pipeline line.
-			net_lcoh_o2 = sellable_o2 - lcoh_o2
 			etrago_cost_power_to_o2 = (annualized_cost_o2_pipeline * distance / o2_ec_h) + annualized_cost_o2_component					# [EUR/MW/YEAR]	
 
 			links.append({
@@ -689,7 +687,6 @@ def find_links(o2_ac, ref_heat, ref_h2):
 		sellable_heat = elz_capacity * HEAT_RATIO * HEAT_SELLING_PRICE / h2_production_h 	# [EUR/kgH2]
 		lcoh_heat = capital_cost_power_to_heat/ h2_production_y # [EUR/kgH2]
 		total_lcoh += lcoh_heat
-		net_lcoh_heat = lcoh_heat - sellable_heat		
 		
 		etrago_cost_power_to_heat = (annualized_capex_heat + (annualized_capex_heat_pipeline * distance))								# [EUR/MW/YEAR]
 
@@ -820,7 +817,6 @@ def find_links(o2_ac, ref_heat, ref_h2):
 		# calculating the cost of power to H2 for eTraGO since it is rquired EUR/MW/YEAR not EUR/YEAR
 		
 		annualized_cost_h2_pipeline = annualize_capital_costs(get_h2_pipeline_cost(h2_pipeline_diameter), ELZ_LIFETIME_Y, DISCOUNT_RATE)# [EUR/KM/YEAR]
-        
         
 		total_pipeline_cost = annualized_cost_h2_pipeline * distance												# [EUR/YEAR]
 		lcoh_h2_pipeline = total_pipeline_cost / h2_production_y			# [EUR/kgH2]
