@@ -13,11 +13,11 @@ from columns import Column
 
 # Input Constant Parameters 
 # General input for the Model
-SCENARIO_NO=2			# 1 = WWTP as reference location, 2 = based on AC as reference location
-OPTIMIZATION = "no"	    # yes or no will lead optimization part to be activte or inactive
-SUBSTATION = "yes"		# yes or no will switch between AC points and Substation points.
-SCENARIO_NAME = "eGon2035"
-ID_OPTIMAL_START = 80_000
+SCENARIO_NO=2			       # 1 = WWTP as reference location, 2 = based on AC as reference location
+OPTIMIZATION = "no"	       # yes or no will lead optimization part to be activte or inactive
+SUBSTATION = "yes"	           # yes or no will switch between AC points and Substation points.
+SCENARIO_NAME = "eGon2035"     # scenario name same as eTraGo database scenario
+ID_OPTIMAL_START = 80_000      
 DATA_CRS=4326
 METRIC_CRS=3857
 DISCOUNT_RATE = 0.05
@@ -152,6 +152,7 @@ queries = {
 }
 
 # First Phase: Find intersection
+
 # Data management
 # read and convert the spatial CRS data to Metric CRS 
 dfs = { key: gpd.read_postgis(queries[key], engine, crs=4326).to_crs(3857) for key in queries.keys() }
@@ -170,10 +171,10 @@ for key in rtree.keys():
         rtree[key].insert(i, dfs[key].iloc[i].geom.bounds)
 
 # Find the nearest intersection relation between AC points and WWTPs
-	# 1. find ACs inside same network zone as wwtp
-	# 2. calculate distances betweeen those acs and wwtp within a identical zone
-	# 3. select the point which has the minimum distance among them
-	# 4. distingush type of AC (point or substation)
+ 	# 1. find ACs inside same network zone as wwtp
+ 	# 2. calculate distances betweeen those acs and wwtp within a identical zone
+ 	# 3. select the point which has the minimum distance among them
+ 	# 4. distingush type of AC (point or substation)
 def find_closest_acs():
 	results = []    
     # Iterate over the zones and calculate distances
@@ -184,12 +185,12 @@ def find_closest_acs():
 			for _, ac_row in ac_in_zones.iterrows():
 				distance = round(wwtp_row.geom.distance(ac_row.geom))
 				results.append({
-					Column.ID_WWTP: wwtp_row['id_left'],
-					Column.ID_KA: wwtp_row['ka_id'],
-					Column.ID_AC: ac_row['id_left'],
-					Column.DISTANCE_AC: distance / 1000,	# km
-					Column.POINT_WWTP: wwtp_row.geom,
-					Column.POINT_AC: ac_row.geom,
+ 					Column.ID_WWTP: wwtp_row['id_left'],
+ 					Column.ID_KA: wwtp_row['ka_id'],
+ 					Column.ID_AC: ac_row['id_left'],
+ 					Column.DISTANCE_AC: distance / 1000,	# km
+ 					Column.POINT_WWTP: wwtp_row.geom,
+ 					Column.POINT_AC: ac_row.geom,
 				})
 	results = pd.DataFrame(results).drop_duplicates()
 	results = results.loc[results.groupby([Column.ID_WWTP])[Column.DISTANCE_AC].idxmin()]
@@ -221,7 +222,7 @@ def find_ac_type(dataframe_with_ac):
     return result
 
 main_df = find_ac_type(main_df)
-# main_df.to_csv("O2_AC.csv", index=False)
+main_df.to_csv("O2_AC.csv", index=False)
 
 # The function find and assign the correct reference point for centrlizing as buffer for further steps
 def get_main_point():
@@ -245,11 +246,11 @@ def find_h2_intersections(rtree, df, buffer_factor, type):
 				distance = round(row[point].distance(item.geom))
 				near_point = nearest_points(item.geom, row[point])[0]
 				results.append({
-					col: row[col],
-					Column.ID_H2: item.id,
-					Column.DISTANCE_H2: distance/1000,
-					Column.POINT_H2: near_point,
-					Column.TYPE_H2: type,
+ 					col: row[col],
+ 					Column.ID_H2: item.id,
+ 					Column.DISTANCE_H2: distance/1000,
+ 					Column.POINT_H2: near_point,
+ 					Column.TYPE_H2: type,
 				})
 	return pd.DataFrame(results)
 h2_intersections = find_h2_intersections(rtree[H2], dfs[H2], MAXIMUM_DISTANCE[H2], H2)
@@ -261,7 +262,7 @@ def find_minimum_h2_intersections():
 	result = union.iloc[union.groupby(col)[Column.DISTANCE_H2].idxmin()]
 	return result
 min_h2_intersections = find_minimum_h2_intersections()
-# min_h2_intersections.to_csv("Ref_H2.csv", index=False)
+min_h2_intersections.to_csv("Ref_H2.csv", index=False)
 
 # Find nearest Heat Points to refernce points
 def find_heatpoint_intersections(rtree):
@@ -274,9 +275,9 @@ def find_heatpoint_intersections(rtree):
 			if buffered.intersects(item.geom):
 				distance = round(row[point].distance(item.geom))
 				results.append({
-					col: row[col],
-					Column.ID_HEAT: item.id,
-					Column.DISTANCE_HEAT: distance/1000,
+ 					col: row[col],
+ 					Column.ID_HEAT: item.id,
+ 					Column.DISTANCE_HEAT: distance/1000,
 					Column.POINT_HEAT: item.geom,
 				})
 	return pd.DataFrame(results)
@@ -289,22 +290,17 @@ def find_minimum_heatpoint_intersections():
 	return result
 
 min_heatpoint_intersections = find_minimum_heatpoint_intersections()
-# min_heatpoint_intersections.to_csv("Ref_Heat.csv", index=False)
+min_heatpoint_intersections.to_csv("Ref_Heat.csv", index=False)
 # not neccessory old version, only to combine the data in one row
 col, _ = get_main_point()
 first_joined_df = pd.merge(main_df, min_h2_intersections, on=col, how="inner")
 first_joined_df = pd.merge(first_joined_df, min_heatpoint_intersections, on=col, how="inner")
-# first_joined_df.to_csv("Phase-1 Result.csv", index=False)
+# # first_joined_df.to_csv("Phase-1 Result.csv", index=False)
 
 # Second Phase: Data management
-# o2_ac = pd.read_csv("O2_AC.csv", index_col=False).drop_duplicates()
-# ref_h2 = pd.read_csv("Ref_H2.csv", index_col=False).drop_duplicates()
-# ref_heat = pd.read_csv("Ref_Heat.csv", index_col=False).drop_duplicates()
-# specs = pd.read_csv("WWTP_spec.csv", index_col=False)
-
-o2_ac = main_df.drop_duplicates()
-ref_h2 = min_h2_intersections.drop_duplicates()
-ref_heat = min_heatpoint_intersections.drop_duplicates()
+o2_ac = pd.read_csv("O2_AC.csv", index_col=False).drop_duplicates()
+ref_h2 = pd.read_csv("Ref_H2.csv", index_col=False).drop_duplicates()
+ref_heat = pd.read_csv("Ref_Heat.csv", index_col=False).drop_duplicates()
 specs = pd.read_csv("WWTP_spec.csv", index_col=False)
 
 # Scenario nomination for the Model 1: wwtp as refernce point 2: ac as reference point
@@ -754,21 +750,20 @@ def find_links(o2_ac, ref_heat, ref_h2):
 		ac_distance = get_ac_distance_for_ref(bus0, o2_ac)		# is this in m or km?
 
 		# annualized cost calculation
-		annualized_cost_h2_pipeline = annualize_capital_costs(get_h2_pipeline_cost(h2_pipeline_diameter), ELZ_LIFETIME_Y, DISCOUNT_RATE)		# [EUR/KM/YEAR]
+# 		annualized_cost_h2_pipeline = annualize_capital_costs(get_h2_pipeline_cost(h2_pipeline_diameter), ELZ_LIFETIME_Y, DISCOUNT_RATE)		# [EUR/KM/YEAR]
 		annualized_cost_ac_cable = annualize_capital_costs((AC_COST_CABLE * ac_distance), AC_LIFETIME_CABLE, DISCOUNT_RATE)						# [EUR/MW/YEAR]
 		annualized_cost_ac_trans = annualize_capital_costs(AC_TRANS, AC_LIFETIME_CABLE, DISCOUNT_RATE)									# [EUR/MW/YEAR]
 		annualized_cost_elz = annualize_capital_costs((ELZ_CAPEX_STACK + ELZ_CAPEX_SYSTEM + ELZ_OPEX), ELZ_LIFETIME_Y, DISCOUNT_RATE)			# [EUR/MW/YEAR]
 
 		# below calcualtion aimed to find the capital cost of power to H2 for LCOH calculation for stand alone model. and the cost cover every part since the total lcoh will be the objective of the optimization in further steps.
 		total_ac_cost = (annualized_cost_ac_cable + annualized_cost_ac_trans + annualized_cost_elz) * elz_capacity								# [EUR/YEAR]
-		total_pipelin_cost = annualized_cost_h2_pipeline * distance												# [EUR/YEAR]
-		lcoh_h2_elz = (total_ac_cost + (h2_production_y * ELZ_SEC * ELEC_COST/1000)) / h2_production_y								# [EUR/kgH2]
-		lcoh_h2_pipeline = total_pipelin_cost / h2_production_y			# [EUR/kgH2]
+# 		total_pipeline_cost = annualized_cost_h2_pipeline * distance												# [EUR/YEAR]
+		lcoh_h2_elz = (total_ac_cost + (h2_production_y * ELZ_SEC * ELEC_COST/1000)) / h2_production_y	       		# [EUR/kgH2]
+# 		lcoh_h2_pipeline = total_pipeline_cost / h2_production_y			# [EUR/kgH2]
 		total_lcoh += lcoh_h2_elz
 
-		# Sine Capital Cost in eTraGO rquires EUR/MW/YEAR not EUR/YEAR. in addition, the power to H2 in etrago relay on cost related to produce hdyrogen not transfering the cost of H2 pipeline will be excluded and will be considered in H2 to Power link.
-		
-		etrago_annualized_cost_h2_pipeline = annualize_capital_costs(H2_COST_PIPELINE, ELZ_LIFETIME_Y, DISCOUNT_RATE) * distance	# [EUR/KM/YEAR]
+		# Since Capital Cost in eTraGO rquires EUR/MW/YEAR not EUR/YEAR. in addition, the power to H2 in etrago relay on cost related to produce hdyrogen and transfering the cost of H2 pipeline will be excluded and will be considered in H2 to Power link.
+		etrago_annualized_cost_h2_pipeline = annualize_capital_costs(H2_COST_PIPELINE, ELZ_LIFETIME_Y, DISCOUNT_RATE) * distance	# [EUR/MW/YEAR]
 		etrago_cost_power_to_h2 = annualized_cost_ac_cable + annualized_cost_ac_trans + annualized_cost_elz	+ etrago_annualized_cost_h2_pipeline	# [EUR/MW/YEAR]
 
 		links.append({
@@ -776,8 +771,8 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"bus1": bus1["id"],
 			"carrier": carrier,
 			"efficiency": ELZ_EFF, 
-			"power_ratio": distance,
-			"length": ac_distance,
+			"power_ratio": ac_distance,
+			"length": distance,
 			"capital_cost": etrago_cost_power_to_h2,
 			"lcoh_capital_cost": total_ac_cost,
 			"p_nom": elz_capacity,
@@ -908,7 +903,6 @@ def find_optimal_loc(o2_ac, ref_heat, ref_h2):
 	
 	return local_o2_ac, local_ref_heat, local_ref_h2
 
-
 # Second Phase: running the optimization
 if OPTIMIZATION == "yes":
 	a, b, c = find_optimal_loc(o2_ac, ref_heat, ref_h2)
@@ -919,13 +913,7 @@ if OPTIMIZATION == "yes":
 else:
 	links_df, _ = find_links(o2_ac, ref_heat, ref_h2)
 	links_df.to_csv(f'SCN-{SCENARIO_NO} Original.csv', index=False)
-	print("Optimization is not supported yet")
-
-
-# links_df.sort_values(by="bus0")
-# links_df[links_df["carrier"] == "H2_to_power"].head()
-# display(links_df)
-
+	print("Optimization is not selected")
 
 
 # Third Phase: Export to PostgreSQL
@@ -979,7 +967,7 @@ else:
 	print("Optimized, but link data has not been imported to PostgreSQL")
 	
 
-    # Third Phase: Export O2 load to PostgreSQL
+# Third Phase: Export O2 load to PostgreSQL
 if OPTIMIZATION == "no":
 	def insert_load_points(df):
 		max_load_id = 40_000
@@ -1022,7 +1010,7 @@ else:
 	print("Optimized, but load data has not been imported to PostgreSQL")
 	
 
-    # Third Phase: Export O2 generator to O2 bus points in to the PostgreSQL database
+# Third Phase: Export O2 generator to O2 bus points in to the PostgreSQL database
 if OPTIMIZATION == "no":
 	def insert_generator_points(df):
 		max_generator_id = 40_000
@@ -1062,10 +1050,8 @@ if OPTIMIZATION == "no":
 	insert_generator_points(links_df)
 else:
 	print("Optimized, but generator data has not been imported to PostgreSQL")
-	
 
-
-#     # Third Phase: Export load time series data to PostgreSQL database
+## Third Phase: Export load time series data to PostgreSQL database
 # if OPTIMIZATION == "no":
 # 	def insert_load_timeseries(df):
 # 		max_loadt_id = 40_000
