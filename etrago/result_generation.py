@@ -2,7 +2,7 @@ import etrago
 
 n = etrago.Etrago(
     csv_folder_name = "D:\eTraGo\etrago\Result-V06 500h-100C",
-    json_path = "D:\eTraGo\etrago\Result-V06 500h-100C.json"
+    json_path = "D:\eTraGo\etrago\Result-V07 500h-100C.json"
 )
 
 # n.plot_carrier()

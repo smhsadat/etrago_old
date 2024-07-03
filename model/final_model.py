@@ -767,7 +767,9 @@ def find_links(o2_ac, ref_heat, ref_h2):
 		total_lcoh += lcoh_h2_elz
 
 		# Sine Capital Cost in eTraGO rquires EUR/MW/YEAR not EUR/YEAR. in addition, the power to H2 in etrago relay on cost related to produce hdyrogen not transfering the cost of H2 pipeline will be excluded and will be considered in H2 to Power link.
-		etrago_cost_power_to_h2 = annualized_cost_ac_cable + annualized_cost_ac_trans + annualized_cost_elz		# [EUR/MW/YEAR]
+		
+		etrago_annualized_cost_h2_pipeline = annualize_capital_costs(H2_COST_PIPELINE, ELZ_LIFETIME_Y, DISCOUNT_RATE) * distance	# [EUR/KM/YEAR]
+		etrago_cost_power_to_h2 = annualized_cost_ac_cable + annualized_cost_ac_trans + annualized_cost_elz	+ etrago_annualized_cost_h2_pipeline	# [EUR/MW/YEAR]
 
 		links.append({
 			"bus0": bus0,
