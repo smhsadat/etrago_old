@@ -93,17 +93,17 @@ MOLAR_MASS_O2 = 0.0319988				# [kg/mol]
 
 
 
-# # connet to PostgreSQL database (to server)
-# engine = create_engine(
-#     "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
-#     echo=False,
-# )
-
-# connet to PostgreSQL database (to localhost)
+# connet to PostgreSQL database (to server)
 engine = create_engine(
-    "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+    "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
     echo=False,
 )
+
+# # connet to PostgreSQL database (to localhost)
+# engine = create_engine(
+#     "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+#     echo=False,
+# )
 
 # read and reproject spatial data
 def read_query(engine, query):
