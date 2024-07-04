@@ -974,6 +974,7 @@ if OPTIMIZATION == "no":
 			"capital_cost",
 			"length",
 			"terrain_factor",
+            "type",
 			"geom",
 		]
 		max_link_id = 80_000
