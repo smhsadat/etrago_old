@@ -10,13 +10,14 @@ from scipy.optimize import minimize
 from shapely.io import from_wkt, to_wkt
 from shapely.geometry import MultiLineString, LineString, Point
 from columns import Column
+from shapely.wkb import dumps
 
 # Input Constant Parameters 
-# General input for the Model
-SCENARIO_NO=2			       # 1 = WWTP as reference location, 2 = based on AC as reference location
-OPTIMIZATION = "no"	       # yes or no will lead optimization part to be activte or inactive
-SUBSTATION = "yes"	           # yes or no will switch between AC points and Substation points.
-SCENARIO_NAME = "eGon2035"     # scenario name same as eTraGo database scenario
+    # General input data for the Model
+SCENARIO_NO=2                   # 1 = WWTP-based location, 2 = AC-based location
+OPTIMIZATION = "no"	            # yes or no to activate optimization of for the optimal location
+SUBSTATION = "yes"              # yes or no will switch between AC points and Substation points.
+SCENARIO_NAME = "eGon2035"      # scenario name same as eTraGo database scenario
 ID_OPTIMAL_START = 80_000      
 DATA_CRS=4326
 METRIC_CRS=3857
@@ -90,6 +91,8 @@ UNIVERSAL_GAS_CONSTANT = 8.3145			# [J/(mol·K)]
 MOLAR_MASS_H2 = 0.002016				# [kg/mol]
 MOLAR_MASS_O2 = 0.0319988				# [kg/mol]
 
+
+
 # # connet to PostgreSQL database (to server)
 # engine = create_engine(
 #     "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
@@ -105,6 +108,43 @@ engine = create_engine(
 # read and reproject spatial data
 def read_query(engine, query):
     return gpd.read_postgis(query, engine, crs=DATA_CRS).to_crs(3857)
+
+
+def export_to_db(df):
+    max_bus_id = 77600
+    next_bus_id = count(start=max_bus_id, step=1)
+    table_name = "egon_etrago_bus"
+    
+    with engine.connect() as conn:
+        conn.execute(text(f"DELETE FROM grid.{table_name} WHERE bus_id >= {max_bus_id} AND carrier = 'O2'"))
+    
+    df = df.copy(deep=True)
+    result = []
+    for _, row in df.iterrows():
+        bus_id = next(next_bus_id)
+        result.append({
+            "scn_name": 'eGon2035',
+            "bus_id": bus_id,
+            "v_nom": '110',
+            "type": row['KA ID'],
+            "carrier": 'O2',
+            "x": row['longitude Kläranlage_rw'],
+            "y": row['latitdue Kläranlage_hw'],
+            "geom": dumps(Point(row['longitude Kläranlage_rw'], row['latitdue Kläranlage_hw']), srid=4326),
+            "country": 'DE',
+        })
+    result_df = pd.DataFrame(result)
+    result_df.to_sql(
+        table_name,
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=False
+    )
+wwtp_spec = pd.read_csv("WWTP_spec.csv", index_col=False)
+export_to_db(wwtp_spec)  # Call the function with the dataframe
+print("WWTP points exported to: egon_etrago_bus")
+
 
 # dictionary of SQL queries
 queries = {
@@ -151,30 +191,30 @@ queries = {
             """,
 }
 
-# First Phase: Find intersection
 
-# Data management
-# read and convert the spatial CRS data to Metric CRS 
+# First Phase: Find intersection
+    # Data management
+    # read and convert the spatial CRS data to Metric CRS 
 dfs = { key: gpd.read_postgis(queries[key], engine, crs=4326).to_crs(3857) for key in queries.keys() }
 
-# First Phase: Find intersection between points
-# Perform spatial join to find points within zones (substation zones)
+    # First Phase: Find intersection between points
+    # Perform spatial join to find points within zones (substation zones)
 in_zone = {
     'wwtp': sjoin(dfs[WWTP], dfs[ACZONE], how="inner", predicate='within'),
     'ac': sjoin(dfs[AC if SUBSTATION == "no" else ACSUB], dfs[ACZONE], how="inner", predicate='within'),
 }
 
-# Create R-tree index to speedup the process based on bounding box coordinates.
+    # Create R-tree index to speedup the process based on bounding box coordinates.
 rtree = { key: index.Index() for key in [H2, AC, ACSUB, H2GRID, HEAT] }
 for key in rtree.keys():
     for i in range(len(dfs[key])):
         rtree[key].insert(i, dfs[key].iloc[i].geom.bounds)
 
-# Find the nearest intersection relation between AC points and WWTPs
- 	# 1. find ACs inside same network zone as wwtp
- 	# 2. calculate distances betweeen those acs and wwtp within a identical zone
- 	# 3. select the point which has the minimum distance among them
- 	# 4. distingush type of AC (point or substation)
+    # Find the nearest intersection relation between AC points and WWTPs
+     	# 1. find ACs inside same network zone as wwtp
+     	# 2. calculate distances betweeen those acs and wwtp within a identical zone
+     	# 3. select the point which has the minimum distance among them
+     	# 4. distingush type of AC (point or substation)
 def find_closest_acs():
 	results = []    
     # Iterate over the zones and calculate distances
@@ -196,10 +236,10 @@ def find_closest_acs():
 	results = results.loc[results.groupby([Column.ID_WWTP])[Column.DISTANCE_AC].idxmin()]
 	results = results[results[Column.DISTANCE_AC] < MAXIMUM_DISTANCE[AC]]
 	return results
-# Creating the initial main dataframe 
+    # Creating the initial main dataframe 
 main_df = find_closest_acs()
 
-# merge and find the AC and Substation type for AC points 
+    # merge and find the AC and Substation type for AC points 
 def find_ac_type(dataframe_with_ac):
     result = dataframe_with_ac.copy()
     def _find_ac_point(row):
@@ -224,7 +264,7 @@ def find_ac_type(dataframe_with_ac):
 main_df = find_ac_type(main_df)
 main_df.to_csv("O2_AC.csv", index=False)
 
-# The function find and assign the correct reference point for centrlizing as buffer for further steps
+    # The function find and assign the correct reference point for centrlizing as buffer for further steps
 def get_main_point():
 	if SCENARIO_NO == 1:
 		return Column.ID_WWTP, Column.POINT_WWTP
@@ -233,8 +273,8 @@ def get_main_point():
 	else:
 		raise Exception("Invalid scenario number")
 
-# Find nearest H2 points & grid pipeline to refernce points (AC or WWTP depend on scenario no)
-# below function support h2 points and h2_grid, by distingushing their types
+    # Find nearest H2 points & grid pipeline to refernce points (AC or WWTP depend on scenario no)
+    # below function support h2 points and h2_grid, by distingushing their types
 def find_h2_intersections(rtree, df, buffer_factor, type):
 	results = []
 	col, point = get_main_point()
@@ -264,7 +304,7 @@ def find_minimum_h2_intersections():
 min_h2_intersections = find_minimum_h2_intersections()
 min_h2_intersections.to_csv("Ref_H2.csv", index=False)
 
-# Find nearest Heat Points to refernce points
+    # Find nearest Heat Points to refernce points
 def find_heatpoint_intersections(rtree):
 	col, point = get_main_point()
 	results = []
@@ -291,17 +331,16 @@ def find_minimum_heatpoint_intersections():
 
 min_heatpoint_intersections = find_minimum_heatpoint_intersections()
 min_heatpoint_intersections.to_csv("Ref_Heat.csv", index=False)
-# not neccessory old version, only to combine the data in one row
+    # not neccessory old version, only to combine the data in one row
 col, _ = get_main_point()
 first_joined_df = pd.merge(main_df, min_h2_intersections, on=col, how="inner")
 first_joined_df = pd.merge(first_joined_df, min_heatpoint_intersections, on=col, how="inner")
-# # first_joined_df.to_csv("Phase-1 Result.csv", index=False)
+    # # first_joined_df.to_csv("Phase-1 Result.csv", index=False)
 
 # Second Phase: Data management
 o2_ac = pd.read_csv("O2_AC.csv", index_col=False).drop_duplicates()
 ref_h2 = pd.read_csv("Ref_H2.csv", index_col=False).drop_duplicates()
 ref_heat = pd.read_csv("Ref_Heat.csv", index_col=False).drop_duplicates()
-specs = pd.read_csv("WWTP_spec.csv", index_col=False)
 
 # Scenario nomination for the Model 1: wwtp as refernce point 2: ac as reference point
 def get_correct_ref_id_col():
@@ -316,7 +355,7 @@ def get_correct_ref_id_col():
 		raise Exception("invalid ref")
 
 def find_spec_for_ka_id(ka_id):
-	found_spec = specs[specs[Column.ID_KA] == ka_id]
+	found_spec = wwtp_spec[wwtp_spec[Column.ID_KA] == ka_id]
 
 	if len(found_spec) > 1:
 		raise Exception("multiple spec for a ka_id")
@@ -416,7 +455,7 @@ def get_ac_distance_for_ref(ref_id, o2_to_ac):
 		return 0
 	else:
 		raise Exception("invalid scenario")
-print("Intersection done")
+print("Intersection Completed.")
 # print("get_h2_for_ref: ", get_h2_for_ref(77600))
 
 
@@ -961,7 +1000,7 @@ if OPTIMIZATION == "no":
 			if_exists="append",
 			index=False
 		)
-	print("link data has been imported to PostgreSQL")
+	print("link data exported to: egon_etrago_link")
 	export_to_db(links_df)
 else:
 	print("Optimized, but link data has not been imported to PostgreSQL")
@@ -1003,7 +1042,7 @@ if OPTIMIZATION == "no":
 			if_exists="append",
 			index=False
 		)
-	print("load data has been imported to PostgreSQL")
+	print("load data exported to: egon_etrago_load")
 
 	insert_load_points(links_df)
 else:
@@ -1046,7 +1085,7 @@ if OPTIMIZATION == "no":
 			if_exists="append",
 			index=False
 		)
-	print("generator data has been imported to PostgreSQL")
+	print("generator data exported to: egon_etrago_generator")
 	insert_generator_points(links_df)
 else:
 	print("Optimized, but generator data has not been imported to PostgreSQL")

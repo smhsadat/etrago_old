@@ -1,5 +1,4 @@
 from aenum import StrEnum
-# from enum import StrEnum
 
 class Column(StrEnum):
     SCN_NAME = "scn_name"
