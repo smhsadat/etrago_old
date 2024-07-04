@@ -688,7 +688,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 				"elz_capacity": elz_capacity,
 				"diameter":o2_pipeline_diameter,
 				"ka_id": ka_id,
-				"type": o2_power_ratio,
+                "type": ka_id,
 				"geom": geom,
 			})
 			# to accomulate H2 production demand as per O2 for the shared bus of AC
