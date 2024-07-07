@@ -11,10 +11,7 @@ eTraGo.egg-info/requires.txt
 eTraGo.egg-info/top_level.txt
 etrago/__init__.py
 etrago/appl.py
-etrago/appl_default.py
 etrago/args.json
-etrago/args_default.json
-etrago/result_generation.py
 etrago/cluster/__init__.py
 etrago/cluster/disaggregation.py
 etrago/cluster/electrical.py

@@ -61,8 +61,7 @@ __license__ = "GNU Affero General Public License Version 3 (AGPL-3.0)"
 __author__ = """ulfmueller, MarlonSchlemminger, mariusves, lukasol, ClaraBuettner,
 CarlosEpia, pieterhexen, gnn, fwitte, lukasol, KathiEsterl, BartelsJ"""
 
-central_longitude = 10.0  # Longitude for centering the map
-central_latitude = 52.0   # Latitude for centering the map
+
 def set_epsg_network(network):
     """
     Change EPSG from 4326 to 3857. Needed when using osm-background.
@@ -158,7 +157,7 @@ def coloring():
         "central_gas_CHP_heat": "darkorange",
         "central_gas_boiler": "saddlebrown",
         "OCGT": "seagreen",
-        "H2_to_power": "green",
+        "H2_to_power": "grean",
         "H2_feedin": "lime",
         "H2_to_CH4": "seagreen",
         "central_heat_store_charger": "firebrick",
@@ -1170,7 +1169,7 @@ def nodal_gen_dispatch(
         fig, ax, xrange, yrange = plot_osm(osm["x"], osm["y"], osm["zoom"])
     elif (osm is False) and cartopy_present:
         fig, ax = plt.subplots(
-            subplot_kw={"projection": ccrs.LambertConformal(central_longitude=central_longitude, central_latitude=central_latitude)}, figsize=(5, 5)
+            subplot_kw={"projection": ccrs.PlateCarree()}, figsize=(5, 5)
         )
 
     else:
@@ -1808,7 +1807,7 @@ def plot_background_grid(network, ax, geographical_boundaries, osm):
                 line_widths=0.5,
                 link_widths=link_widths,
                 geomap=True,
-                projection=ccrs.LambertConformal(central_longitude=central_longitude, central_latitude=central_latitude),
+                projection=ccrs.PlateCarree(),
                 color_geomap=True,
                 boundaries=geographical_boundaries,
             )
@@ -2349,7 +2348,7 @@ def flexibility_usage(
         fig_e.savefig(pre_path + f"stored_e_{flexibility}")
 
 
-def plot_carrier(etrago, carrier_links=["AC"], carrier_buses=["AC"], apply_on="grid_model", figsize=(150,100), geographical_boundaries=None):
+def plot_carrier(etrago, carrier_links=["AC"], carrier_buses=["AC"], apply_on="grid_model", figsize=(150,100), dpi=100, geographical_boundaries=None):
     """
     Parameters
     ----------
@@ -2387,7 +2386,7 @@ def plot_carrier(etrago, carrier_links=["AC"], carrier_buses=["AC"], apply_on="g
     # Set background
     if cartopy_present:
         plt.rcParams["figure.autolayout"] = True
-        fig, ax = plt.subplots(subplot_kw={"projection": ccrs.LambertConformal(central_longitude=central_longitude, central_latitude=central_latitude)}, figsize=figsize)
+        fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()}, figsize=figsize)
         draw_map_cartopy(ax, color_geomap=True)
     else:
         fig, ax = plt.subplots(figsize=figsize)
@@ -2561,7 +2560,7 @@ def plot_grid(
 
     elif (osm is False) and cartopy_present:
         fig, ax = plt.subplots(
-            subplot_kw={"projection": ccrs.LambertConformal(central_longitude=central_longitude, central_latitude=central_latitude)}, figsize=(5, 5)
+            subplot_kw={"projection": ccrs.PlateCarree()}, figsize=(5, 5)
         )
 
     else:
@@ -2862,7 +2861,7 @@ def plot_grid(
             flow=flow,
             title=title,
             geomap=False,
-            projection=ccrs.LambertConformal(central_longitude=central_longitude, central_latitude=central_latitude),
+            projection=ccrs.PlateCarree(),
             color_geomap=True,
             boundaries=geographical_boundaries,
         )
@@ -3132,7 +3131,7 @@ def plot_clusters(
     # Set background
     if cartopy_present:
         plt.rcParams["figure.autolayout"] = True
-        fig, ax = plt.subplots(subplot_kw={"projection": ccrs.LambertConformal(central_longitude=central_longitude, central_latitude=central_latitude)})
+        fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
         draw_map_cartopy(ax, color_geomap=True)
     else:
         fig, ax = plt.subplots()

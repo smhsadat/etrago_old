@@ -1,3 +1,5 @@
+# Last update 04 July 2024
+# Model developed in three phases: 1.Intersection of links 2. Calculations 3. Exporting the data
 import pandas as pd
 import math
 import geopandas as gpd
@@ -93,17 +95,17 @@ MOLAR_MASS_O2 = 0.0319988				# [kg/mol]
 
 
 
-# connet to PostgreSQL database (to server)
-engine = create_engine(
-    "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
-    echo=False,
-)
-
-# # connet to PostgreSQL database (to localhost)
+# # connet to PostgreSQL database (to server)
 # engine = create_engine(
-#     "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+#     "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
 #     echo=False,
 # )
+
+# connet to PostgreSQL database (to localhost)
+engine = create_engine(
+    "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+    echo=False,
+)
 
 # read and reproject spatial data
 def read_query(engine, query):
@@ -775,7 +777,8 @@ def find_links(o2_ac, ref_heat, ref_h2):
 		elif SCENARIO_NO == 2:
 			ac = get_ac_point(row[Column.ID_AC])
 
-		geom = MultiLineString([[[bus0_point.x, bus0_point.y], [ac.x, ac.y]]])
+# 		geom = MultiLineString([[[bus0_point.x, bus0_point.y], [ac.x, ac.y]]])
+		geom = MultiLineString([[[bus0_point.x, bus0_point.y], [bus1["point"].x, bus1["point"].y]]])
 
 		# Electrolyzer Calculation
 		h2_production_y = total_h2_production_y[f"{bus0}"]							# [kgH2/year]
