@@ -47,7 +47,8 @@ AC_TRANS = 17_500			            # [EUR/MVA]
 AC_LIFETIME_CABLE = 25					# [year]
 AC_COST_CABLE = 800_000					# [EUR/km/MVA]
 FUEL_CELL_EFF = 0.5						# to use as effeciency of hydrogen to power
-
+FUEL_CELL_COST = 1_084_000				# [EUR/MWe]
+FUEL_CELL_LIFETIME = 10					# [Year]
 # Heat
 HEAT_RATIO = 0.2						# % of the total kwh of electrolyzer production maybe the energy kwh in H2
 HEAT_LIFETIME = 20						# [YEAR]
@@ -95,17 +96,17 @@ MOLAR_MASS_O2 = 0.0319988				# [kg/mol]
 
 
 
-# # connet to PostgreSQL database (to server)
-# engine = create_engine(
-#     "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
-#     echo=False,
-# )
-
-# connet to PostgreSQL database (to localhost)
+# connet to PostgreSQL database (to server)
 engine = create_engine(
-    "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+    "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
     echo=False,
 )
+
+# # connet to PostgreSQL database (to localhost)
+# engine = create_engine(
+#     "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+#     echo=False,
+# )
 
 # read and reproject spatial data
 def read_query(engine, query):
@@ -691,6 +692,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 				"diameter":o2_pipeline_diameter,
 				"ka_id": ka_id,
                 "type": ka_id,
+				"lifetime": O2_LIFETIME_PIPELINE,
 				"geom": geom,
 			})
 			# to accomulate H2 production demand as per O2 for the shared bus of AC
@@ -750,6 +752,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"diameter": "",
 			"ka_id": HEAT_RATIO,
 			"type": HEAT_RATIO,
+			"lifetime": HEAT_LIFETIME,
 			"geom": geom,
 		})
 	# data calculation for power to H2, from AC to ELZ location. distance might be AC to WWTP or AC to AC (Zero)
@@ -824,6 +827,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"diameter": h2_pipeline_diameter,
 			"ka_id": "",
 			"type": bus1["type"],
+			"lifetime": HEAT_LIFETIME,
 			"geom": geom,
 		})
 
@@ -864,12 +868,13 @@ def find_links(o2_ac, ref_heat, ref_h2):
 		
 		annualized_cost_h2_pipeline = annualize_capital_costs(get_h2_pipeline_cost(h2_pipeline_diameter), ELZ_LIFETIME_Y, DISCOUNT_RATE)# [EUR/KM/YEAR]
         
-		total_pipeline_cost = annualized_cost_h2_pipeline * distance												# [EUR/YEAR]
+		total_pipeline_cost = annualized_cost_h2_pipeline * distance		# [EUR/YEAR]
 		lcoh_h2_pipeline = total_pipeline_cost / h2_production_y			# [EUR/kgH2]
 		total_lcoh += lcoh_h2_pipeline
         
 		etrago_annualized_cost_h2_pipeline = annualize_capital_costs(H2_COST_PIPELINE, ELZ_LIFETIME_Y, DISCOUNT_RATE)	# [EUR/KM/YEAR]
-		etrago_cost_h2_to_power = etrago_annualized_cost_h2_pipeline * distance	# [EUR/MW/YEAR]
+		etrago_annualized_cost_fuel_cell = annualize_capital_costs(FUEL_CELL_COST,FUEL_CELL_LIFETIME,DISCOUNT_RATE)		#[EUR/MW/YEAR]
+		etrago_cost_h2_to_power = etrago_annualized_cost_h2_pipeline * distance	+etrago_annualized_cost_fuel_cell		# [EUR/MW/YEAR]
         
 		links.append({
 			"bus0": bus0,
@@ -887,6 +892,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"diameter": h2_pipeline_diameter,
 			"ka_id": "",
 			"type": type,
+			"lifetime":FUEL_CELL_LIFETIME,
 			"geom": geom,
 		})
 	return pd.DataFrame(links), total_lcoh
@@ -978,6 +984,7 @@ if OPTIMIZATION == "no":
 			"length",
 			"terrain_factor",
             "type",
+			"lifetime",
 			"geom",
 		]
 		max_link_id = 80_000
@@ -985,7 +992,6 @@ if OPTIMIZATION == "no":
 
 		df["scn_name"] = SCENARIO_NAME
 		df["build_year"] = 2035
-		df["lifetime"] = 25
 		df["p_nom_extendable"] = True
 		df["length"] = 0
 		df["link_id"] = df["bus0"].apply(lambda _: next(next_max_link_id))

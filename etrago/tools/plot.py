@@ -148,7 +148,7 @@ def coloring():
         "central_heat_pump": "mediumpurple",
         "central_resistive_heater": "blueviolet",
         "rural_heat_pump": "violet",
-        "CH4": "yellow",
+        "CH4": "green",
         "CH4_biogas": "yellow",
         "CH4_NG": "yellow",
         "CH4_to_H2": "yellowgreen",
@@ -3447,7 +3447,7 @@ def plot_gas_summary(self, t_resolution="20H", stacked=True, save_path=False):
         plt.savefig(save_path, dpi=300)
 
 
-def plot_h2_generation(self, t_resolution="20H", save_path=False):
+def plot_h2_generation(self, carrier_link, t_resolution="10H", save_path=False):
     """
     Plots timeseries data for H2 generation
 
@@ -3455,6 +3455,7 @@ def plot_h2_generation(self, t_resolution="20H", save_path=False):
     ----------
     self : :class:`Etrago
         Overall container of Etrago
+    carrier_link: power_to_H2, power_to_Heat, etc
     t_resolution : str, optional
         sets the resampling rate of timeseries data to allow for smoother
         line plots
@@ -3466,44 +3467,45 @@ def plot_h2_generation(self, t_resolution="20H", save_path=False):
     None.
 
     """
-    fig, ax = plt.subplots(figsize=(20, 10), dpi=300)
+    fig, ax = plt.subplots(figsize=(20, 10), dpi=600)
 
     colors = coloring()
 
-    h2_CH4_gen = -self.network.links_t.p1[
-        self.network.links.loc[self.network.links.carrier == "CH4_to_H2"].index
-    ]
+    # h2_CH4_gen = -self.network.links_t.p1[
+    #     self.network.links.loc[self.network.links.carrier == "CH4_to_H2"].index
+    # ]
     h2_power_gen = -self.network.links_t.p1[
         self.network.links.loc[
-            self.network.links.carrier == "power_to_H2"
+            self.network.links.carrier == carrier_link
         ].index
     ]
 
-    (h2_CH4_gen.sum(axis=1) / 1e3 + h2_power_gen.sum(axis=1) / 1e3).resample(
-        t_resolution
-    ).mean().plot(
+    # (h2_CH4_gen.sum(axis=1) / 1e3 + h2_power_gen.sum(axis=1) / 1e3).resample(
+    #     t_resolution
+    # ).mean().plot(
+    #     ax=ax,
+    #     title="H2 Generation",
+    #     legend=True,
+    #     ylabel="[GW]",
+    #     label="Total dispatch",
+    #     lw=5,
+    # )
+    # (h2_CH4_gen.sum(axis=1) / 1e3).resample(t_resolution).mean().plot(
+    #     ax=ax,
+    #     label="CH4_to_H2 Dispatch",
+    #     legend=True,
+    #     color=colors["CH4_to_H2"],
+    # )
+    (h2_power_gen.sum(axis=1)).resample(t_resolution).mean().plot(
         ax=ax,
-        title="H2 Generation",
+        label=f"{carrier_link} Dispatch",
         legend=True,
-        ylabel="[GW]",
-        label="Total dispatch",
-        lw=5,
-    )
-    (h2_CH4_gen.sum(axis=1) / 1e3).resample(t_resolution).mean().plot(
-        ax=ax,
-        label="CH4_to_H2 Dispatch",
-        legend=True,
-        color=colors["CH4_to_H2"],
-    )
-    (h2_power_gen.sum(axis=1) / 1e3).resample(t_resolution).mean().plot(
-        ax=ax,
-        label="power_to_H2 Dispatch",
-        legend=True,
-        color=colors["power_to_H2"],
+        ylabel="[MWh]",
+        color=colors[carrier_link],
     )
 
     if save_path:
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=600)
 
 
 def plot_h2_summary(self, t_resolution="20H", stacked=True, save_path=False):
@@ -3566,7 +3568,7 @@ def plot_h2_summary(self, t_resolution="20H", stacked=True, save_path=False):
             ]
             data[i] = loads.sum(axis=1).resample(t_resolution).mean() / 1e3
 
-        fig, ax = plt.subplots(figsize=(20, 10), dpi=300)
+        fig, ax = plt.subplots(figsize=(20, 10), dpi=600)
         data.plot.area(
             ax=ax,
             title="Stacked H2 Loads by carrier",
