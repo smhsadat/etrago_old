@@ -1,4 +1,4 @@
-# Last update 04 July 2024
+# Last update 13 July 2024
 # Model developed in three phases: 1.Intersection of links 2. Calculations 3. Exporting the data
 import pandas as pd
 import math
@@ -16,7 +16,7 @@ from shapely.wkb import dumps
 
 # Input Constant Parameters 
     # General input data for the Model
-SCENARIO_NO=2                   # 1 = WWTP-based location, 2 = AC-based location
+SCENARIO_NO= 2                  # 1 = WWTP-based location, 2 = AC-based location
 OPTIMIZATION = "no"	            # yes or no to activate optimization of for the optimal location
 SUBSTATION = "yes"              # yes or no will switch between AC points and Substation points.
 SCENARIO_NAME = "eGon2035"      # scenario name same as eTraGo database scenario
@@ -41,35 +41,13 @@ MAXIMUM_DISTANCE = { # meter
     HEAT: 80000 + 100,
 }
 
-# Electricity
+# Power to H2 (Electricity & Electrolyser)
+	#Electricity
 ELEC_COST = 60 							# [EUR/MWh]
 AC_TRANS = 17_500			            # [EUR/MVA]
 AC_LIFETIME_CABLE = 25					# [year]
 AC_COST_CABLE = 800_000					# [EUR/km/MVA]
-FUEL_CELL_EFF = 0.5						# to use as effeciency of hydrogen to power
-FUEL_CELL_COST = 1_084_000				# [EUR/MWe]
-FUEL_CELL_LIFETIME = 10					# [Year]
-# Heat
-HEAT_RATIO = 0.2						# % of the total kwh of electrolyzer production maybe the energy kwh in H2
-HEAT_LIFETIME = 20						# [YEAR]
-HEAT_EFFICIENCY = 0.8805				# [] according to Lennart data
-HEAT_COST_PIPELINE = 25_000				# [EUR/MWH/KM] overal cost for heat except pipeline
-HEAT_SELLING_PRICE = 21.6				# [EUR/MWh]
-
-# Wastewater Treatment Plants (WWTP)
-WWTP_SEC = {'c5': 29.6, 'c4': 31.3,'c3': 39.8, 'c2': 42.1}	# [kWh/year] Specific Energy Consumption for different class of WWTPs
-O2_O3_RATIO = 1.7 						# [-]
-O2_H2_RATIO = 7.7						# [-]
-O2_PURE_RATIO = 20.95/100				# [-]
-FACTOR_AERATION_EC = 0.6				# [%] aeration Electrical Consumption from total capacity of WWTP (PE)
-FACTOR_O2_EC = 0.8						# [%] Oxygen Electrical Consumption from total aeration EC
-O2_LIFETIME_PIPELINE = 25				
-O2_EFFICIENCY = 0.9
-O2_PRESSURE_MIN = 2				     	# [bar]
-O2_COST_EQUIPMENT = 5000
-O2_LIEFTIME_EQUIPMENT = 25
-
-# Electrolyzers (ELZ)
+	# Electrolyzers (ELZ)
 ELZ_SEC = 50	 						# [kWh/kgH2] electrolyzer specific energy 
 ELZ_EFF = 33.33/ELZ_SEC					# [%] H2 energy kWh/kgH2 / electricity input kWh/kgH2
 ELZ_FLH = 8760 							# [hour] full load hours 		5217
@@ -82,19 +60,38 @@ H2_TO_POWER_EFF = 0.5					# as per available postgres database
 H2_PRESSURE_ELZ = 30					# [bar]		1.01325
 O2_PRESSURE_ELZ = 13					# [bar]
 
-# Hydrogen Pipeline
+# Power to Heat
+HEAT_RATIO = 0.2						# % of the total kwh of electrolyzer production maybe the energy kwh in H2
+HEAT_LIFETIME = 25						# [YEAR]
+HEAT_EFFICIENCY = 0.8805				# [] according to Lennart data
+HEAT_COST_PIPELINE = 25_000				# [EUR/MWH/KM] overal cost for heat except pipeline
+HEAT_SELLING_PRICE = 21.6				# [EUR/MWh]
+
+# Power to O2 (Wastewater Treatment Plants)
+WWTP_SEC = {'c5': 29.6, 'c4': 31.3,'c3': 39.8, 'c2': 42.1}	# [kWh/year] Specific Energy Consumption for different class of WWTPs
+O2_O3_RATIO = 1.7 						# [-]
+O2_H2_RATIO = 7.7						# [-]
+O2_PURE_RATIO = 20.95/100				# [-]
+FACTOR_AERATION_EC = 0.6				# [%] aeration Electrical Consumption from total capacity of WWTP (PE)
+FACTOR_O2_EC = 0.8						# [%] Oxygen Electrical Consumption from total aeration EC
+O2_LIFETIME_PIPELINE = 25				
+O2_EFFICIENCY = 0.9
+O2_PRESSURE_MIN = 2				     	# [bar]
+O2_COST_EQUIPMENT = 5000
+O2_LIEFTIME_EQUIPMENT = 25
+MOLAR_MASS_O2 = 0.0319988				# [kg/mol]
+
+# H2 to Power (Hydrogen Pipeline)
 H2_PRESSURE_MIN = 29					# [bar]
 H2_LIFETIME_PIPELINE = 25				# [YEAR]
 H2_COST_PIPELINE = 25_000				# [EUR/MW]
-
-# general gas pipeline constant
+FUEL_CELL_EFF = 0.5						# to use as effeciency of hydrogen to power
+FUEL_CELL_COST = 1_084_000				# [EUR/MWe]
+FUEL_CELL_LIFETIME = 10					# [Year]
 PIPELINE_DIAMETER_RANGE = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50] # range of pipeline size [m]
 TEMPERATURE = 15 + 273.15			    # [Kelvin] degree + 273.15
 UNIVERSAL_GAS_CONSTANT = 8.3145			# [J/(mol·K)]
 MOLAR_MASS_H2 = 0.002016				# [kg/mol]
-MOLAR_MASS_O2 = 0.0319988				# [kg/mol]
-
-
 
 # connet to PostgreSQL database (to server)
 engine = create_engine(
@@ -265,7 +262,7 @@ def find_ac_type(dataframe_with_ac):
     return result
 
 main_df = find_ac_type(main_df)
-main_df.to_csv("O2_AC.csv", index=False)
+# main_df.to_csv("O2_AC.csv", index=False)
 
     # The function find and assign the correct reference point for centrlizing as buffer for further steps
 def get_main_point():
@@ -305,7 +302,7 @@ def find_minimum_h2_intersections():
 	result = union.iloc[union.groupby(col)[Column.DISTANCE_H2].idxmin()]
 	return result
 min_h2_intersections = find_minimum_h2_intersections()
-min_h2_intersections.to_csv("Ref_H2.csv", index=False)
+# min_h2_intersections.to_csv("Ref_H2.csv", index=False)
 
     # Find nearest Heat Points to refernce points
 def find_heatpoint_intersections(rtree):
@@ -333,7 +330,7 @@ def find_minimum_heatpoint_intersections():
 	return result
 
 min_heatpoint_intersections = find_minimum_heatpoint_intersections()
-min_heatpoint_intersections.to_csv("Ref_Heat.csv", index=False)
+# min_heatpoint_intersections.to_csv("Ref_Heat.csv", index=False)
     # not neccessory old version, only to combine the data in one row
 col, _ = get_main_point()
 first_joined_df = pd.merge(main_df, min_h2_intersections, on=col, how="inner")
@@ -341,9 +338,12 @@ first_joined_df = pd.merge(first_joined_df, min_heatpoint_intersections, on=col,
     # # first_joined_df.to_csv("Phase-1 Result.csv", index=False)
 
 # Second Phase: Data management
-o2_ac = pd.read_csv("O2_AC.csv", index_col=False).drop_duplicates()
-ref_h2 = pd.read_csv("Ref_H2.csv", index_col=False).drop_duplicates()
-ref_heat = pd.read_csv("Ref_Heat.csv", index_col=False).drop_duplicates()
+# o2_ac = pd.read_csv("O2_AC.csv", index_col=False).drop_duplicates()
+# ref_h2 = pd.read_csv("Ref_H2.csv", index_col=False).drop_duplicates()
+# ref_heat = pd.read_csv("Ref_Heat.csv", index_col=False).drop_duplicates()
+o2_ac = main_df
+ref_h2 = min_h2_intersections
+ref_heat = min_heatpoint_intersections
 
 # Scenario nomination for the Model 1: wwtp as refernce point 2: ac as reference point
 def get_correct_ref_id_col():
@@ -380,7 +380,7 @@ def get_wwtps_for_ac(ac_id):
 		res.append({
 			"id": ac[Column.ID_WWTP],
 			"ka_id": ac[Column.ID_KA],
-			"point": from_wkt(ac[Column.POINT_WWTP]),
+			"point": ac[Column.POINT_WWTP],
 		})
 	return res
 
@@ -406,7 +406,7 @@ def get_heat_for_ref(ref_id):
 	heat = heat.iloc[0]
 	return {
 		"id": heat[Column.ID_HEAT],
-		"point": from_wkt(heat[Column.POINT_HEAT]),
+		"point": heat[Column.POINT_HEAT],
 	}
 
 # print("get_heat_for_ref: ", get_heat_for_ref(77600))
@@ -420,19 +420,19 @@ def get_h2_for_ref(ref_id):
 	
 	return {
 		"id": h2[Column.ID_H2],
-		"point": from_wkt(h2[Column.POINT_H2]),
+		"point": h2[Column.POINT_H2],
 		"type": h2[Column.TYPE_H2],
 	}
 
 def get_wwtp_point(wwpt_id):
 	row = o2_ac[o2_ac[Column.ID_WWTP] == wwpt_id].iloc[0]
 
-	return from_wkt(row[Column.POINT_WWTP])
+	return row[Column.POINT_WWTP]
 
 def get_ac_point(ac_id):
 	row = o2_ac[o2_ac[Column.ID_AC] == ac_id].iloc[0]
 
-	return from_wkt(row[Column.POINT_AC])
+	return row[Column.POINT_AC]
 
 def get_ac_distance_for_ref(ref_id, o2_to_ac):
 	if OPTIMIZATION == "yes":
@@ -443,7 +443,7 @@ def get_ac_distance_for_ref(ref_id, o2_to_ac):
 
 		row = row.iloc[0]
 
-		return from_wkt(row[Column.POINT_AC]).distance(row[Column.POINT_OPTIMAL]) / 1000
+		return row[Column.POINT_AC].distance(row[Column.POINT_OPTIMAL]) / 1000
 
 	if SCENARIO_NO == 1:	
 		row = o2_to_ac[o2_to_ac[Column.ID_WWTP] == ref_id]
@@ -453,12 +453,13 @@ def get_ac_distance_for_ref(ref_id, o2_to_ac):
 
 		row = row.iloc[0]
 
-		return from_wkt(row[Column.POINT_AC]).distance(from_wkt(row[Column.POINT_WWTP])) / 1000
+		return row[Column.POINT_AC].distance(row[Column.POINT_WWTP]) / 1000
 	elif SCENARIO_NO == 2:
 		return 0
 	else:
 		raise Exception("invalid scenario")
 print("Intersection Completed.")
+print(f'Scenario No = {SCENARIO_NO} & Optimization = {OPTIMIZATION}')
 # print("get_h2_for_ref: ", get_h2_for_ref(77600))
 
 
@@ -584,12 +585,16 @@ def add_ref_col(df):
 
 	find_point = get_wwtp_point if SCENARIO_NO == 1 else get_ac_point
 
-	df[Column.ID_OPTIMAL] = df[starting_col_id].map(ref_ids)
-	df[Column.POINT_OPTIMAL] = df[starting_col_id].apply(find_point)
+	# df[Column.ID_OPTIMAL] = df[starting_col_id].map(ref_ids)
+	# df[Column.POINT_OPTIMAL] = df[starting_col_id].apply(find_point)
+	return df.assign(**{
+		Column.ID_OPTIMAL: df[starting_col_id].map(ref_ids),
+		Column.POINT_OPTIMAL: df[starting_col_id].apply(find_point)
+	})
 
-add_ref_col(o2_ac)
-add_ref_col(ref_heat)
-add_ref_col(ref_h2)
+o2_ac = add_ref_col(o2_ac)
+ref_heat = add_ref_col(ref_heat)
+ref_h2 = add_ref_col(ref_h2)
 
 # Calculate variables for Links: power_to_O2, power_to_H2, power_to_Heat, H2_to_power
 # optimized bus { "id": generated, "point": optimized }
@@ -612,17 +617,17 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			bus0 = row[Column.ID_OPTIMAL]
 			bus0_point = row[Column.POINT_OPTIMAL]
 			if SCENARIO_NO == 1:
-				bus1s = [{"id": row[Column.ID_WWTP], "point": from_wkt(row[Column.POINT_WWTP])}]
+				bus1s = [{"id": row[Column.ID_WWTP], "point": row[Column.POINT_WWTP]}]
 			elif SCENARIO_NO == 2:
 				bus1s = get_wwtps_for_ac(row[Column.ID_AC])
 		else:
 			if SCENARIO_NO == 1:
 				bus0 = row[Column.ID_WWTP]
-				bus0_point = from_wkt(row[Column.POINT_WWTP])
+				bus0_point = row[Column.POINT_WWTP]
 				bus1s = [{"id": bus0, "point": bus0_point}]
 			elif SCENARIO_NO == 2:
 				bus0 = row[Column.ID_AC]
-				bus0_point = from_wkt(row[Column.POINT_AC])
+				bus0_point = row[Column.POINT_AC]
 				bus1s = get_wwtps_for_ac(bus0)
 		
 		for bus1 in bus1s:
@@ -776,7 +781,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 		distance = bus0_point.distance(bus1["point"]) / 1000
 
 		if SCENARIO_NO == 1:
-			ac = from_wkt(o2_ac[o2_ac[Column.ID_WWTP] == row[Column.ID_WWTP]].iloc[0][Column.POINT_AC])
+			ac = o2_ac[o2_ac[Column.ID_WWTP] == row[Column.ID_WWTP]].iloc[0][Column.POINT_AC]
 		elif SCENARIO_NO == 2:
 			ac = get_ac_point(row[Column.ID_AC])
 
@@ -834,7 +839,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 	for _, row in ref_h2.iterrows():
 		carrier = "H2_to_power"
 		bus0 = row[Column.ID_H2]
-		bus0_point = from_wkt(row[Column.POINT_H2])
+		bus0_point = row[Column.POINT_H2]
 		type = row[Column.TYPE_H2]
 		if OPTIMIZATION == "yes":
 			bus1 = row[Column.ID_OPTIMAL]
@@ -961,7 +966,6 @@ if OPTIMIZATION == "yes":
 else:
 	links_df, _ = find_links(o2_ac, ref_heat, ref_h2)
 	links_df.to_csv(f'SCN-{SCENARIO_NO} Original.csv', index=False)
-	print("Optimization is not selected")
 
 
 # Third Phase: Export to PostgreSQL
@@ -1013,14 +1017,15 @@ if OPTIMIZATION == "no":
 	print("link data exported to: egon_etrago_link")
 	export_to_db(links_df)
 else:
-	print("Optimized, but link data has not been imported to PostgreSQL")
+	print("Optimized, but link data has not been exported to PostgreSQL")
 	
+
+max_load_id = 40_000
+next_load_id = count(start=max_load_id, step=1)
 
 # Third Phase: Export O2 load to PostgreSQL
 if OPTIMIZATION == "no":
 	def insert_load_points(df):
-		max_load_id = 40_000
-		next_load_id = count(start=max_load_id, step=1)
 		table_name = "egon_etrago_load"
 
 		with engine.connect() as conn:
@@ -1052,12 +1057,46 @@ if OPTIMIZATION == "no":
 			if_exists="append",
 			index=False
 		)
-	print("load data exported to: egon_etrago_load")
+	print("O2 load data exported to: egon_etrago_load")
 
 	insert_load_points(links_df)
 else:
-	print("Optimized, but load data has not been imported to PostgreSQL")
+	print("Optimized, but O2 load data has not been exported")
 	
+if OPTIMIZATION == "no" and SCENARIO_NO == 2:
+	def insert_neg_load_points(df):
+		table_name = "egon_etrago_load"
+		
+		df = df.copy(deep=True)
+
+		df = df[df["carrier"] == "power_to_O2"]
+
+		result = []
+		for _, row in df.iterrows():
+			load_id = next(next_load_id)
+
+			result.append({
+				"scn_name": SCENARIO_NAME,
+				"load_id": load_id,
+				"bus": row["bus0"], 
+				"carrier": "AC",
+				"type" : "O2",
+				"p_set": -row["p_nom"],
+			})
+		df = pd.DataFrame(result)
+
+		df.to_sql(
+			table_name,
+			engine,
+			schema="grid",
+			if_exists="append",
+			index=False
+		)
+	print("Negative O2 load data exported to: egon_etrago_load")
+
+	insert_neg_load_points(links_df)
+else:
+	print("Optimized, but Negative O2 load data has not been exported")
 
 # Third Phase: Export O2 generator to O2 bus points in to the PostgreSQL database
 if OPTIMIZATION == "no":
@@ -1098,7 +1137,7 @@ if OPTIMIZATION == "no":
 	print("generator data exported to: egon_etrago_generator")
 	insert_generator_points(links_df)
 else:
-	print("Optimized, but generator data has not been imported to PostgreSQL")
+	print("Optimized, but generator data has not been exported")
 
 ## Third Phase: Export load time series data to PostgreSQL database
 # if OPTIMIZATION == "no":
@@ -1149,4 +1188,3 @@ else:
 # 	insert_load_timeseries(links_df)
 # else:
 #	print("Optimized, but load timeseries data has not been imported to PostgreSQL")
-

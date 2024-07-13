@@ -2443,7 +2443,7 @@ def plot_carrier(etrago, carrier_links=["AC"], carrier_buses=["AC"], apply_on="g
 def plot_grid(
     self,
     line_colors,
-    bus_sizes=0.001,
+    bus_sizes=0.01,
     bus_colors="grey",
     timesteps=range(2),
     osm=False,
@@ -2454,7 +2454,7 @@ def plot_grid(
     ext_width=False,
     legend_entries="all",
     scaling_store_expansion=False,
-    geographical_boundaries=[-2.5, -16, -46.8, 58],
+    geographical_boundaries=[-2.5, 18, 46, 58],
 ):
     """Function that plots etrago.network and results for lines and buses
 
@@ -2549,7 +2549,7 @@ def plot_grid(
     # Set default values
     flow = None
     title = ""
-    line_widths = 2
+    line_widths = 10
     link_widths = 0
 
     # Plot osm map in background
@@ -2561,11 +2561,11 @@ def plot_grid(
 
     elif (osm is False) and cartopy_present:
         fig, ax = plt.subplots(
-            subplot_kw={"projection": ccrs.LambertConformal(central_longitude=central_longitude, central_latitude=central_latitude)}, figsize=(5, 5)
+            subplot_kw={"projection": ccrs.LambertConformal(central_longitude=central_longitude, central_latitude=central_latitude)}, figsize=(10, 10)
         )
 
     else:
-        fig, ax = plt.subplots(figsize=(5, 5))
+        fig, ax = plt.subplots(figsize=(10, 10))
 
     fig.set_tight_layout(True)
 
