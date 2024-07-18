@@ -169,7 +169,7 @@ def coloring():
         "central_heat_store_discharger": "firebrick",
         "rural_heat_store_discharger": "salmon",
         "rural_heat": "orange",
-        "central_heat": "orangered",
+        "central_heat": "orange",
         "H2_grid": "green",
         "H2_saltcavern": "darkgreen",
         "central_heat_store": "firebrick",
@@ -2349,7 +2349,7 @@ def flexibility_usage(
         fig_e.savefig(pre_path + f"stored_e_{flexibility}")
 
 
-def plot_carrier(etrago, carrier_links=["AC"], carrier_buses=["AC"], apply_on="grid_model", figsize=(150,100), geographical_boundaries=None):
+def plot_carrier(etrago, carrier_links=["AC"], carrier_buses=["AC"], apply_on="grid_model", figsize=(150,100), geographical_boundaries=[-2.5, 18, 46, 58]):
     """
     Parameters
     ----------
@@ -2454,7 +2454,7 @@ def plot_grid(
     ext_width=False,
     legend_entries="all",
     scaling_store_expansion=False,
-    geographical_boundaries=[-2.5, 18, 46, 58],
+    geographical_boundaries=[-2.5, 18, 50, 51],
 ):
     """Function that plots etrago.network and results for lines and buses
 

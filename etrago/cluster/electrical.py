@@ -161,6 +161,7 @@ def adjust_no_electric_network(
         & (network2.buses["carrier"] != "rural_heat_store")
         & (network2.buses["carrier"] != "central_heat")
         & (network2.buses["carrier"] != "central_heat_store")
+        & (network2.buses["carrier"] != "O2")
     ]
     map_carrier = {
         "H2_saltcavern": "power_to_H2",
@@ -168,6 +169,7 @@ def adjust_no_electric_network(
         "Li ion": "BEV charger",
         "Li_ion": "BEV_charger",
         "rural_heat": "rural_heat_pump",
+        "O2" : "power_to_O2"
     }
 
     no_elec_conex = []

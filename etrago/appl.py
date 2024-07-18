@@ -63,7 +63,7 @@ args = {
         "q_allocation": "p_nom",  # allocate reactive power via 'p_nom' or 'p'
     },
     "start_snapshot": 1,     #smh. this inidcate to the start time of the duration in hour smh. this data is in june
-    "end_snapshot": 8760,       #smh. end of period in hour 3744
+    "end_snapshot": 24,       #smh. end of period in hour 3744
     "solver": "gurobi",  #glpk, cplex or gurobi     #smh. the groubi academic lesceinse required to be installed
     "solver_options": {
         "BarConvTol": 1.0e-5,
@@ -80,7 +80,7 @@ args = {
     "scn_decommissioning": None,  # None or decommissioning scenario
     # Export options:
     "lpfile": False,  # save pyomo's lp file: False or /path/to/lpfile.lp smh. optimization problem debugin, if something happen you can check it 
-    "csv_export": "Result_V1_8760_50cl",  # save results as csv: False or /path/tofolder smh. looking for the result
+    "csv_export": "Result_V1_8760_50cl_test",  # save results as csv: False or /path/tofolder smh. looking for the result
     # Settings:
     "extendable": {
         "extendable_components": [
@@ -111,10 +111,10 @@ args = {
     "network_clustering": {
         "active": True,  # choose if clustering is activated
         "method": "kmedoids-dijkstra",  # choose clustering method: kmeans or kmedoids-dijkstra
-        "n_clusters_AC": 50,  # total number of resulting AC nodes (DE+foreign) smh. standard mentioned to consider 300 here, but using clustering cause to lose the number of bus + electrolyzer beacuse it will reduce the number and show the total capacity. not advised to use in our optimziation but howerever it is theoritic and an option.
+        "n_clusters_AC": 300,  # total number of resulting AC nodes (DE+foreign) smh. standard mentioned to consider 300 here, but using clustering cause to lose the number of bus + electrolyzer beacuse it will reduce the number and show the total capacity. not advised to use in our optimziation but howerever it is theoritic and an option.
         "cluster_foreign_AC": False,  # take foreign AC buses into account, True or False
         "method_gas": "kmedoids-dijkstra",  # choose clustering method: kmeans or kmedoids-dijkstra
-        "n_clusters_gas": 50,  # total number of resulting CH4 nodes (DE+foreign) #smh. set to 50
+        "n_clusters_gas": 80,  # total number of resulting CH4 nodes (DE+foreign) #smh. set to 50
         "cluster_foreign_gas": False,  # take foreign CH4 buses into account, True or False
         "k_elec_busmap": False,  # False or path/to/busmap.csv
         "k_gas_busmap": False,  # False or path/to/ch4_busmap.csv
@@ -138,6 +138,10 @@ args = {
                 "base": ["CH4", "AC"],
                 "strategy": "simultaneous",  # select strategy to cluster other sectors
             },
+            "O2": {
+                "base": ["CH4", "AC"],
+                "strategy": "simultaneous",  # select strategy to cluster other sectors
+            },
         },
     },
 
@@ -152,16 +156,16 @@ args = {
         "n_clusters": 5,  # number of periods - only relevant for 'typical_periods'
         "n_segments": 5,  # number of segments - only relevant for segmentation
     },
-    "skip_snapshots": 10,  # False or number of snapshots to skip smh. default value is 5
+    "skip_snapshots": 5,  # False or number of snapshots to skip smh. default value is 5
     "temporal_disaggregation": {
         "active": False,  # choose if temporally full complex dispatch optimization should be conducted
         "no_slices": 8,  # number of subproblems optimization is divided into
     },
     # Simplifications:
-    "branch_capacity_factor": {"HV": 0.5, "eHV": 0.7},  # p.u. branch derating
+    "branch_capacity_factor": {"HV" : 0.5, "eHV": 0.7},  # p.u. branch derating
     "load_shedding": True,  # meet the demand at value of loss load cost #smh. default value is TRUE could be set to False. however this will help to solve the problem of overloading in bus by generatin the enough electricity for the load to cover the overload problem of the line.
     "foreign_lines": {
-        "carrier": "AC",  # 'DC' for modeling foreign lines as links
+        "carrier": "DC",  # 'DC' for modeling foreign lines as links
         "capacity": "osmTGmod",  # 'osmTGmod', 'tyndp2020', 'ntc_acer' or 'thermal_acer'
     },
     "comments": None,
