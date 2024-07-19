@@ -1,5 +1,5 @@
-# Last update 13 July 2024
-# Model developed in three phases: 1.Intersection of links 2. Calculations 3. Exporting the data
+# Last update 18 July 2024
+# Model developed in three phases: 1.Intersection & data management 2. Calculations 3. Exporting the data
 import pandas as pd
 import math
 import geopandas as gpd
@@ -17,13 +17,15 @@ from shapely.wkb import dumps
 # Input Constant Parameters 
     # General input data for the Model
 SCENARIO_NO= 2                  # 1 = WWTP-based location, 2 = AC-based location
-OPTIMIZATION = "no"	            # yes or no to activate optimization of for the optimal location
-SUBSTATION = "yes"              # yes or no will switch between AC points and Substation points.
+OPTIMIZATION = "no"	            # "yes" or "no" to activate optimization for the optimal location
+SUBSTATION = "yes"              # "yes" or "no" will switch between AC points and Substation points.
 SCENARIO_NAME = "eGon2035"      # scenario name same as eTraGo database scenario
-ID_OPTIMAL_START = 80_000      
+ID_OPTIMAL_START = 80_000       # Considered to be the maximum id number comparing to egon-data
 DATA_CRS=4326
 METRIC_CRS=3857
 DISCOUNT_RATE = 0.05
+
+print(f'Scenario No = {SCENARIO_NO} & Optimization = {OPTIMIZATION}')
 
 H2 = 'h2'
 WWTP = 'wwtp'
@@ -34,11 +36,11 @@ ACSUB = "ac_sub"
 O2 = 'o2'
 HEAT = 'heat_point'
 
-MAXIMUM_DISTANCE = { # meter
-    O2: 600,
-    AC: 80000 + 100,
-    H2: 80000 + 100,
-    HEAT: 80000 + 100,
+MAXIMUM_DISTANCE = {
+    O2: 10,     # km to define the radii between O2 to AC
+    AC: 80000,  # m not conisdered.
+    H2: 80000,  # m define the distance between H2 and reference points (AC/O2)
+    HEAT: 30000,# m define the distance betweeen Heat and reference points (AC/O2)
 }
 
 # Power to H2 (Electricity & Electrolyser)
@@ -93,17 +95,17 @@ TEMPERATURE = 15 + 273.15			    # [Kelvin] degree + 273.15
 UNIVERSAL_GAS_CONSTANT = 8.3145			# [J/(mol·K)]
 MOLAR_MASS_H2 = 0.002016				# [kg/mol]
 
-# connet to PostgreSQL database (to server)
-engine = create_engine(
-    "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
-    echo=False,
-)
-
-# # connet to PostgreSQL database (to localhost)
+# # connet to PostgreSQL database (to server)
 # engine = create_engine(
-#     "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+#     "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
 #     echo=False,
 # )
+
+# connet to PostgreSQL database (to localhost)
+engine = create_engine(
+    "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+    echo=False,
+)
 
 # read and reproject spatial data
 def read_query(engine, query):
@@ -216,26 +218,27 @@ for key in rtree.keys():
      	# 3. select the point which has the minimum distance among them
      	# 4. distingush type of AC (point or substation)
 def find_closest_acs():
-	results = []    
+    results = []    
     # Iterate over the zones and calculate distances
-	for zone_id in dfs[ACZONE].index:
-		wwtp_in_zones = in_zone[WWTP][in_zone[WWTP]['index_right'] == zone_id]
-		ac_in_zones = in_zone[AC][in_zone[AC]['index_right'] == zone_id]
-		for _, wwtp_row in wwtp_in_zones.iterrows():
-			for _, ac_row in ac_in_zones.iterrows():
-				distance = round(wwtp_row.geom.distance(ac_row.geom))
-				results.append({
- 					Column.ID_WWTP: wwtp_row['id_left'],
- 					Column.ID_KA: wwtp_row['ka_id'],
- 					Column.ID_AC: ac_row['id_left'],
- 					Column.DISTANCE_AC: distance / 1000,	# km
- 					Column.POINT_WWTP: wwtp_row.geom,
- 					Column.POINT_AC: ac_row.geom,
-				})
-	results = pd.DataFrame(results).drop_duplicates()
-	results = results.loc[results.groupby([Column.ID_WWTP])[Column.DISTANCE_AC].idxmin()]
-	results = results[results[Column.DISTANCE_AC] < MAXIMUM_DISTANCE[AC]]
-	return results
+    for zone_id in dfs[ACZONE].index:
+        wwtp_in_zones = in_zone[WWTP][in_zone[WWTP]['index_right'] == zone_id]
+        ac_in_zones = in_zone[AC][in_zone[AC]['index_right'] == zone_id]
+        for _, wwtp_row in wwtp_in_zones.iterrows():
+            for _, ac_row in ac_in_zones.iterrows():
+                distance = round(wwtp_row.geom.distance(ac_row.geom))/1000
+                if distance <= MAXIMUM_DISTANCE[O2]:
+                    results.append({
+       					Column.ID_WWTP: wwtp_row['id_left'],
+       					Column.ID_KA: wwtp_row['ka_id'],
+       					Column.ID_AC: ac_row['id_left'],
+       					Column.DISTANCE_AC: distance,	# km
+       					Column.POINT_WWTP: wwtp_row.geom,
+       					Column.POINT_AC: ac_row.geom,
+                })
+    results = pd.DataFrame(results).drop_duplicates()
+    results = results.loc[results.groupby([Column.ID_WWTP])[Column.DISTANCE_AC].idxmin()]
+    results = results[results[Column.DISTANCE_AC] < MAXIMUM_DISTANCE[O2]]
+    return results
     # Creating the initial main dataframe 
 main_df = find_closest_acs()
 
@@ -459,7 +462,6 @@ def get_ac_distance_for_ref(ref_id, o2_to_ac):
 	else:
 		raise Exception("invalid scenario")
 print("Intersection Completed.")
-print(f'Scenario No = {SCENARIO_NO} & Optimization = {OPTIMIZATION}')
 # print("get_h2_for_ref: ", get_h2_for_ref(77600))
 
 
@@ -750,7 +752,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"length": distance,
 			"capital_cost":etrago_cost_power_to_heat,
 			"lcoh_capital_cost": capital_cost_power_to_heat,
-			"p_nom": heat_production_h,
+			"p_nom": 0,
 			"sellable_cost": sellable_heat,
 			"LCOH": lcoh_heat,
 			"elz_capacity": elz_capacity,
@@ -825,7 +827,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"length": distance,
 			"capital_cost": etrago_cost_power_to_h2,
 			"lcoh_capital_cost": total_ac_cost,
-			"p_nom": elz_capacity,
+			"p_nom": 0,
 			"sellable_cost": "",
 			"LCOH": lcoh_h2_elz,
 			"elz_capacity": elz_capacity,
@@ -890,7 +892,7 @@ def find_links(o2_ac, ref_heat, ref_h2):
 			"length": distance,
 			"capital_cost": etrago_cost_h2_to_power,
 			"lcoh_capital_cost": total_pipeline_cost,
-			"p_nom": h2_production_energy_h,
+			"p_nom": 0,
 			"sellable_cost": "",
 			"LCOH": lcoh_h2_pipeline,
 			"elz_capacity": elz_capacity,
@@ -920,7 +922,7 @@ def find_optimal_loc(o2_ac, ref_heat, ref_h2):
 
 	# print("Unoptimized total LCOH=", unoptimized_total)
 
-	# links_df.to_csv(f'SCN-{SCENARIO_NO} Before Optimization.csv', index=False)
+# 	links_df.to_csv(f'SCN-{SCENARIO_NO} Before Optimization.csv', index=False)
 
 	# filter H2_to_power links
 	filtered = links_df[links_df["carrier"] != "H2_to_power"]
