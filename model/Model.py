@@ -38,8 +38,8 @@ HEAT = 'heat_point'
 
 MAXIMUM_DISTANCE = {
     O2: 10,     # km to define the radii between O2 to AC
-    AC: 80000,  # m not conisdered.
-    H2: 80000,  # m define the distance between H2 and reference points (AC/O2)
+    AC: 30000,  # m not conisdered.
+    H2: 30000,  # m define the distance between H2 and reference points (AC/O2)
     HEAT: 30000,# m define the distance betweeen Heat and reference points (AC/O2)
 }
 
@@ -95,17 +95,17 @@ TEMPERATURE = 15 + 273.15			    # [Kelvin] degree + 273.15
 UNIVERSAL_GAS_CONSTANT = 8.3145			# [J/(mol·K)]
 MOLAR_MASS_H2 = 0.002016				# [kg/mol]
 
-# # connet to PostgreSQL database (to server)
-# engine = create_engine(
-#     "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",
-#     echo=False,
-# )
-
-# connet to PostgreSQL database (to localhost)
+# connet to PostgreSQL database (to server)
 engine = create_engine(
-    "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+    "postgresql+psycopg2://egon:data@localhost:59738/etrago-eGon2035",
     echo=False,
 )
+
+# # connet to PostgreSQL database (to localhost)
+# engine = create_engine(
+#     "postgresql+psycopg2://postgres:postgres@localhost:5432/etrago-data",
+#     echo=False,
+# )
 
 # read and reproject spatial data
 def read_query(engine, query):
