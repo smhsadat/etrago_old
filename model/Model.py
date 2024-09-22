@@ -90,7 +90,7 @@ MAXIMUM_DISTANCE = {
 
 # connet to PostgreSQL database (to server)
 engine = create_engine(
-    "postgresql+psycopg2://egon:data@localhost:59738/etrago-eGon2035",echo=False,)
+    "postgresql+psycopg2://egon:data@localhost:59738/etrago-data",echo=False,)
 
 
 # # connet to PostgreSQL database (to localhost)
