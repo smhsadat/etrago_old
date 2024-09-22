@@ -150,7 +150,6 @@ def adjust_no_electric_network(
             """Parameter apply_on must be either 'grid_model' or 'market_model'
             """
         )
-
     # network2 is supposed to contain all the not electrical or gas buses
     # and links
     network2 = network.copy(with_time=False)
@@ -161,15 +160,14 @@ def adjust_no_electric_network(
         & (network2.buses["carrier"] != "rural_heat_store")
         & (network2.buses["carrier"] != "central_heat")
         & (network2.buses["carrier"] != "central_heat_store")
-        & (network2.buses["carrier"] != "O2")
+        # & (network2.buses["carrier"] != "O2")
     ]
     map_carrier = {
         "H2_saltcavern": "power_to_H2",
         "dsm": "dsm",
         "Li ion": "BEV charger",
-        "Li_ion": "BEV_charger",
         "rural_heat": "rural_heat_pump",
-        "O2" : "power_to_O2"
+        # "O2" : "power_to_O2"
     }
 
     no_elec_conex = []
@@ -911,7 +909,7 @@ def postprocessing(
     network.generators["weight"] = network.generators["p_nom"]
     aggregate_one_ports = network.one_port_components.copy()
     aggregate_one_ports.discard("Generator")
-
+    breakpoint()
     clustering = get_clustering_from_busmap(
         network,
         busmap,

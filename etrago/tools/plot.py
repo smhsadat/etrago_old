@@ -2454,7 +2454,7 @@ def plot_grid(
     ext_width=False,
     legend_entries="all",
     scaling_store_expansion=False,
-    geographical_boundaries=[-2.5, 18, 50, 51],
+    geographical_boundaries=[5.5, 15.3, 47, 56.2],
 ):
     """Function that plots etrago.network and results for lines and buses
 

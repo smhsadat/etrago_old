@@ -63,7 +63,7 @@ args = {
         "q_allocation": "p_nom",  # allocate reactive power via 'p_nom' or 'p'
     },
     "start_snapshot": 1,     #smh. this inidcate to the start time of the duration in hour smh. this data is in june
-    "end_snapshot": 24,       #smh. end of period in hour 3744
+    "end_snapshot": 8760,       #smh. end of period in hour 3744
     "solver": "gurobi",  #glpk, cplex or gurobi     #smh. the groubi academic lesceinse required to be installed
     "solver_options": {
         "BarConvTol": 1.0e-5,
@@ -72,6 +72,7 @@ args = {
         "crossover": 0,
         "logFile": "solver_etrago.log", 
         "threads": 4,
+        "BarHomogemenous": 0,
     },
     "model_formulation": "kirchhoff",  # angles or kirchhoff
     "scn_name": "eGon2035",  # scenario: eGon2035, eGon100RE or status2019, eGon2035
@@ -114,7 +115,7 @@ args = {
         "n_clusters_AC": 100,  # total number of resulting AC nodes (DE+foreign) smh. standard mentioned to consider 300 here, but using clustering cause to lose the number of bus + electrolyzer beacuse it will reduce the number and show the total capacity. not advised to use in our optimziation but howerever it is theoritic and an option.
         "cluster_foreign_AC": False,  # take foreign AC buses into account, True or False
         "method_gas": "kmedoids-dijkstra",  # choose clustering method: kmeans or kmedoids-dijkstra
-        "n_clusters_gas": 80,  # total number of resulting CH4 nodes (DE+foreign) #smh. set to 50
+        "n_clusters_gas": 20,  # total number of resulting CH4 nodes (DE+foreign) #smh. set to 50
         "cluster_foreign_gas": False,  # take foreign CH4 buses into account, True or False
         "k_elec_busmap": False,  # False or path/to/busmap.csv
         "k_gas_busmap": False,  # False or path/to/ch4_busmap.csv
@@ -138,10 +139,10 @@ args = {
                 "base": ["CH4", "AC"],
                 "strategy": "simultaneous",  # select strategy to cluster other sectors
             },
-            # "O2": {
-            #     "base": ["CH4", "AC"],
-            #     "strategy": "simultaneous",  # select strategy to cluster other sectors
-            # },
+            "O2": {
+                "base": ["AC"],
+                "strategy": "simultaneous",  # select strategy to cluster other sectors
+            },
         },
     },
 
@@ -156,7 +157,7 @@ args = {
         "n_clusters": 5,  # number of periods - only relevant for 'typical_periods'
         "n_segments": 5,  # number of segments - only relevant for segmentation
     },
-    "skip_snapshots": 5,  # False or number of snapshots to skip smh. default value is 5
+    "skip_snapshots": 7,  # False or number of snapshots to skip smh. default value is 5
     "temporal_disaggregation": {
         "active": False,  # choose if temporally full complex dispatch optimization should be conducted
         "no_slices": 8,  # number of subproblems optimization is divided into
